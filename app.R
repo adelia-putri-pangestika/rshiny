@@ -7,12 +7,12 @@ ui <- dashboardPage(skin = "blue",
                     dashboardHeader(title = "Experimental Design"),
                     dashboardSidebar(
                       sidebarMenu(
-                        menuItem("Rancangan Acak Kelompok Lengkap", tabName = "RAKL", icon = icon("th-large"))
+                        menuItem("Rancangan Bujur Sangkar Latin", tabName = "RBSL", icon = icon("th-large"))
                       )
                     ),
                     dashboardBody(
                       tabItems(
-                        tabItem(tabName = "RAKL",
+                        tabItem(tabName = "RBSL",
                                 fluidPage(
                                   box(title = "Data",
                                       status = "primary",
@@ -36,15 +36,19 @@ ui <- dashboardPage(skin = "blue",
                                   box(title = "Peubah",
                                       status = "primary",
                                       solidHeader = T,
-                                      selectInput(inputId = "varr1",
-                                                  label = "Pilih Respon",
+                                      selectInput(inputId = "var1",
+                                                  label = "Pilih Baris",
                                                   choices = NULL),
-                                      selectInput(inputId = "varr2",
+                                      selectInput(inputId = "var2",
+                                                  label = "Pilih Kolom",
+                                                  choices = NULL),
+                                      selectInput(inputId = "var3",
                                                   label = "Pilih Perlakuan",
                                                   choices = NULL),
-                                      selectInput(inputId = "varr3",
-                                                  label = "Pilih Kelompok",
-                                                  choices = NULL)),
+                                      selectInput(inputId = "var4",
+                                                  label = "Pilih Respon",
+                                                  choices = NULL))
+                                  
                                 ),
                                 fluidPage(
                                   tabBox(
@@ -52,63 +56,64 @@ ui <- dashboardPage(skin = "blue",
                                     height = "1000px",
                                     width = 12,
                                     tabPanel("Data",
-                                             dataTableOutput(outputId = "tabel_rakl")),
+                                             dataTableOutput(outputId = "tabel_rbsl")),
                                     tabPanel("Data Summary",
-                                             verbatimTextOutput(outputId = "summary_rakl")),
+                                             verbatimTextOutput(outputId = "summary_rbsl")),
                                     tabPanel("Anova",
-                                             verbatimTextOutput(outputId = "anova_rakl")),
+                                             verbatimTextOutput(outputId = "anova_rbsl"),
+                                             verbatimTextOutput(outputId = "anova.result")),
                                     tabPanel("Uji Lanjut",
                                              box(title = "Uji LSD",
                                                  collapsible = TRUE, width=12,
-                                                 verbatimTextOutput(outputId = "ujilanjut_rakllsd")),
+                                                 verbatimTextOutput(outputId = "ujilanjut_rbsllsd")),
                                              box(title = "Uji Tukey",
                                                  collapsible = TRUE,width=12,
-                                                 verbatimTextOutput(outputId = "ujilanjut_rakltukey")),
-                                             box(title = "Plot Uji Tukey",
-                                                height = "480px", solidHeader = TRUE,
-                                                plotOutput(outputId = "ujilanjut_rakltukey_plot")),
+                                                 verbatimTextOutput(outputId = "ujilanjut_rbsltukey")),
                                              box(title = "Uji Duncan",
                                                  collapsible = TRUE,width=12,
-                                                 verbatimTextOutput(outputId = "ujilanjut_raklduncan"))),
-                                    
-                                    
-                                    
-                                    tabPanel("Uji Asumsi",
-                                             box(title = "Uji Asumsi Normalitas",
-                                                 height = "280px",
-                                                 selectInput(inputId = "sel.norm",
-                                                             label = "Pilih Jenis Uji",
-                                                             choices = c("Shapiro-Wilk"="Shapiro-Wilk",
-                                                                         "Kolmogorov-Smirnov"= "Kolmogorov-Smirnov",
-                                                                         "Anderson-Darling" = "Anderson-Darling"
-                                                                         ),
-                                                             selected = "Shapiro-Wilk"),
-                                                 verbatimTextOutput(outputId = "norm"),
-                                                 verbatimTextOutput(outputId = "norm.result")),
-                                             box(title = "Uji Asumsi Heteroskedastisitas",
-                                                 height = "280px",
-                                                 selectInput(inputId = "sel.hetero",
-                                                             label = "Pilih Jenis Uji",
-                                                             choices = c("Breusch-Pagan" = "Breusch-Pagan",
-                                                                         "Glesjer" = "Glesjer"
-                                                             ),
-                                                             selected = "Breusch-Pagan"),
-                                                 verbatimTextOutput(outputId = "hetero"),
-                                                 verbatimTextOutput(outputId = "hetero.result")),
-                                             box(title = "Uji Asumsi Autokorelasi",
-                                                 height = "280px",
-                                                 selectInput(inputId = "sel.auto",
-                                                             label = "Pilih Jenis Uji",
-                                                             choices = c("Durbin-Watson" = "Durbin-Watson",
-                                                                         "Breusch-Godfrey" = "Breusch-Godfrey"
-                                                             ),
-                                                             selected = "Durbin-Watson"),
-                                                 verbatimTextOutput(outputId = "auto"),
-                                                 verbatimTextOutput(outputId = "auto.result")),
-                                             )
-                                               
-                                             ),
-                          
+                                                 verbatimTextOutput(outputId = "ujilanjut_rbslduncan"))),
+                                    tabPanel(
+                                      "Uji Asumsi",
+                                      conditionalPanel(
+                                        condition = "output.anova",
+                                        box(title = "Uji Asumsi Normalitas",
+                                            height = "280px",
+                                            selectInput(inputId = "sel.norm",
+                                                        label = "Pilih Jenis Uji",
+                                                        choices = c("Shapiro-Wilk"="Shapiro-Wilk",
+                                                                    "Kolmogorov-Smirnov"= "Kolmogorov-Smirnov",
+                                                                    "Anderson-Darling" = "Anderson-Darling"
+                                                        ),
+                                                        selected = "Shapiro-Wilk"),
+                                            verbatimTextOutput(outputId = "norm"),
+                                            verbatimTextOutput(outputId = "norm.result")),
+                                        
+                                        box(title = "Uji Asumsi Heteroskedastisitas",
+                                            height = "280px",
+                                            selectInput(inputId = "sel.hetero",
+                                                        label = "Pilih Jenis Uji",
+                                                        choices = c("Breusch-Pagan" = "Breusch-Pagan",
+                                                                    "Glesjer" = "Glesjer"),
+                                                        selected = "Breusch-Pagan"),
+                                            verbatimTextOutput(outputId = "hetero"),
+                                            verbatimTextOutput(outputId = "hetero.result")),
+                                        
+                                        box(title = "Uji Asumsi Autokorelasi",
+                                            height = "280px",
+                                            selectInput(inputId = "sel.auto",
+                                                        label = "Pilih Jenis Uji",
+                                                        choices = c("Durbin-Watson" = "Durbin-Watson",
+                                                                    "Breusch-Godfrey" = "Breusch-Godfrey"),
+                                                        selected = "Durbin-Watson"),
+                                            verbatimTextOutput(outputId = "auto"),
+                                            verbatimTextOutput(outputId = "auto.result")),
+                                        
+                                        box(title = "Ringkasan",
+                                            height = "280px",
+                                            tableOutput(outputId = "ringkas_uji"))
+                                      )
+                                    )
+                                  )
                                 )
                                 
                         )
@@ -142,76 +147,192 @@ server <- function(input, output, session){
   })
   
   
+  output$tabel_rbsl <- renderDataTable(inData(), options = list(pageLength = 10))
   
-  output$tabel_rakl <- renderDataTable(inData(), options = list(pageLength = 10))
-  
-  output$summary_rakl <- renderPrint(summary(inData()))
   
   observe(
-    updateSelectInput(session = session, inputId = "varr1", 
-                      label = "Pilih Respon", choices = colnames(inData())[sapply(inData(), is.numeric)])
+    updateSelectInput(session = session, inputId = "var1", 
+                      label = "Pilih Variabel Baris", choices = colnames(inData()))
   )
   
-  observeEvent(input$varr1,{
-    updateSelectInput(session = session, inputId = "varr2",label = "Pilih Perlakuan",
-                      choices = colnames(inData())[!(colnames(inData()) %in% input$varr1)])})
+  observeEvent(input$var1,{
+    updateSelectInput(session = session, inputId = "var2",label = "Pilih Variabel Kolom",
+                      choices = colnames(inData())[!(colnames(inData()) %in% input$var1)])})
   
-  observeEvent(input$varr2,{
-    updateSelectInput(session = session, inputId = "varr3",label = "Pilih Kelompok",
-                      choices = colnames(inData())[!(colnames(inData()) %in% input$varr1)])})
+  observeEvent(input$var2,{
+    updateSelectInput(session = session, inputId = "var3",label = "Pilih Variabel Perlakuan",
+                      choices = colnames(inData())[!(colnames(inData()) %in% input$var2 )])})
   
+  observeEvent(input$var3,{
+    updateSelectInput(session = session, inputId = "var4",label = "Pilih Variabel Respon",
+                      choices = colnames(inData())[!(colnames(inData()) %in% input$var3)])})
   
+  output$summary_rbsl <- renderPrint(summary(inData()))
   
-  anovarakl <- reactive({
-    if(is.null(input$varr2)){
+  anovarbsl <- reactive({
+    if(is.null(input$var1)){
       return(NULL)
     }
-    
-    if(is.null(input$varr3)){
-      return(NULL)
-    }
-    
     else{
-      return(aov(as.formula(paste(input$varr1," ~ ",paste(input$varr2, "+", input$varr3, collapse="+"))),data=inData()))
+      baris <- as.factor(inData()[[input$var1]])
+      kolom <- as.factor(inData()[[input$var2]])
+      perlakuan <- as.factor(inData()[[input$var3]])
+      respon <- as.numeric(inData()[[input$var4]])
+      return(aov(as.formula(respon ~ baris + kolom + perlakuan)))
     }
   })
   
-
-  output$anova_rakl <- renderPrint(summary(anovarakl()))
+  output$anova_rbsl <- renderPrint(summary(anovarbsl()))
   
-  lsdrakl <- reactive({
-    lsdrakl1 <- LSD.test(anovarakl(),paste(input$varr2), p.adj="none")
-    return(lsdrakl1)
+  
+  lsdrbsl <- reactive({
+    baris <- as.factor(inData()[[input$var1]])
+    kolom <- as.factor(inData()[[input$var2]])
+    perlakuan <- as.factor(inData()[[input$var3]])
+    respon <- as.numeric(inData()[[input$var4]])
+    lsdrbsl1 <- LSD.test(anovarbsl(),"perlakuan", p.adj="none")
+    return(lsdrbsl1)
   })
   
-  output$ujilanjut_rakllsd <- renderPrint(lsdrakl())
-
-  tukeyrakl <- reactive({
-    tukeyrakl1 <- TukeyHSD(anovarakl(),paste(input$varr2))
-    return(tukeyrakl1)
+  output$ujilanjut_rbsllsd <- renderPrint(lsdrbsl())
+  
+  tukeyrbsl <- reactive({
+    baris <- as.factor(inData()[[input$var1]])
+    kolom <- as.factor(inData()[[input$var2]])
+    perlakuan <- as.factor(inData()[[input$var3]])
+    respon <- as.numeric(inData()[[input$var4]])
+    tukeyrbsl1 <- TukeyHSD(anovarbsl(),"perlakuan")
+    return(tukeyrbsl1)
   })
   
-  tukeyrakl2 <- reactive({
-    tukeyrakl1 <- TukeyHSD(anovarakl(),paste(input$varr2))
-    plot(tukeyrakl1)
+  duncanrbsl <- reactive({
+    baris <- as.factor(inData()[[input$var1]])
+    kolom <- as.factor(inData()[[input$var2]])
+    perlakuan <- as.factor(inData()[[input$var3]])
+    respon <- as.numeric(inData()[[input$var4]])
+    duncanrbsl1 <- duncan.test(anovarbsl(),"perlakuan",group = T, console = T)
+    return(duncanrbsl1)
   })
   
-  output$ujilanjut_rakltukey <- renderPrint(tukeyrakl())
+  output$ujilanjut_rbslduncan <- renderPrint(duncanrbsl())
   
-  output$ujilanjut_rakltukey_plot <-  renderPlot((tukeyrakl2()))
   
-  duncanrakl <-reactive({
-    duncanrakl1 <- duncan.test(anovarakl(), paste(input$varr2))
-    return(duncanrakl1)
+  
+  asumsi.norm <- reactive({
+    req(anova_rbsl())
+    req(input$sel.norm)
+    if(input$sel.norm == "Shapiro-Wilk"){
+      return(stats::shapiro.test(anova_rbsl()$residuals))
+    }
+    else if(input$sel.norm == "Kolmogorov-Smirnov"){
+      return(stats::ks.test(anova_rbsl()$residuals, y = pnorm))
+    }
+    else if(input$sel.norm == "Anderson-Darling"){
+      return(nortest::ad.test(anova_rbsl()$residuals))
+    }
   })
   
-  output$ujilanjut_raklduncan <- renderPrint(duncanrakl())
-  
-  norm.result1<-reactive({
-    norm.result1<-shapiro.test(anovarakl())
+  norm.result <- reactive({
+    req(asumsi.norm())
+    if(asumsi.norm()$p.value > 0.05) {
+      return("Menyebar normal")
+    }
+    else{
+      return("Tidak menyebar normal")
+    }
   })
   
-  output$norm.result <- renderPrint(norm.result1())
+  output$norm <- renderPrint({
+    req(anova_rbsl())
+    print(asumsi.norm())
+  })
+  
+  output$norm.result <- renderPrint({
+    req(norm.result())
+    print(norm.result())
+  })
+  
+  asumsi.hetero <- reactive({
+    req(anova_rbsl())
+    req(input$sel.hetero)
+    if(input$sel.hetero == "Breusch-Pagan"){
+      return(lmtest::bptest(anova_rbsl()))
+    }
+    else if(input$sel.hetero == "glejser"){
+      return(skedastic::glesjer(anova_rbsl()))
+    }
+  })
+  
+  hetero.result <- reactive({
+    req(asumsi.hetero())
+    if(asumsi.hetero()$p.value > 0.05){
+      return("Sisaan tidak heterogen")
+    }  
+    else{
+      return("Sisaan heterogen")
+    }
+  })
+  
+  
+  output$hetero <- renderPrint({
+    req(anova_rbsl())
+    print(asumsi.hetero())
+  })
+  
+  output$hetero.result <- renderPrint({
+    req(hetero.result())
+    print(hetero.result())
+  })
+  
+  asumsi.auto <- reactive({
+    req(anova_rbsl())
+    if(input$sel.auto == "Durbin-Watson"){
+      return(lmtest::dwtest(anova_rbsl()))  
+    }
+    else if(input$sel.auto == "Breusch-Godfrey"){
+      return(lmtest::bgtest(anova_rbsl()))
+    }
+    
+  })
+  
+  auto.result <- reactive({
+    req(asumsi.auto())
+    if(asumsi.auto()$p.value > 0.05){
+      return("Tidak ada autokorelasi")
+    }
+    else{
+      return("Ada Autokorelasi")
+    }
+  })
+  
+  output$auto <- renderPrint({
+    req(anova_rbsl())
+    print(asumsi.auto())
+    
+  })
+  
+  output$auto.result <- renderPrint({
+    req(auto.result())
+    print(auto.result())
+  })
+  
+  p.norm <- reactive(asumsi.norm()$p.value)
+  
+  p.hetero <- reactive(asumsi.hetero()$p.value)
+  
+  p.auto <- reactive(asumsi.auto()$p.value)
+  
+  output$ringkas_uji <- renderTable({
+    req(norm.result())
+    req(hetero.result())
+    req(auto.result())
+    data.frame(
+      "Jenis Asumsi" = c("Normalitas", "Heterokedastisitas", "Autokorelasi"),
+      "Jenis Uji" = c(input$sel.norm, input$sel.hetero, input$sel.auto),
+      "P-value" = c(p.norm(), p.hetero(), p.auto()),
+      "Keputusan" = c(paste(norm.result()), paste(hetero.result()), paste(auto.result()))
+    )}
+  )
   
 }
 

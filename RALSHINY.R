@@ -2,6 +2,9 @@ library(shiny)
 library(shinydashboard)
 library(stringr)
 library(agricolae)
+library(lmtest)
+library(car)
+library(randtests)
 
 ui <- dashboardPage(skin = "blue",
                     dashboardHeader(title = "Experimental Design"),
@@ -65,7 +68,15 @@ ui <- dashboardPage(skin = "blue",
                                                  collapsible = TRUE,width=12,
                                                  verbatimTextOutput(outputId = "ujilanjut_ralduncan"))),
                                     tabPanel("Uji Asumsi",
-                                             verbatimTextOutput(outputId = "asumsi_ral")),
+                                             box(title = "Uji Kesamaan Ragam Sisaan",
+                                                 collapsible = TRUE, width=12,
+                                                 verbatimTextOutput(outputId = "homoskedastis_ral")),
+                                             box(title = "Uji Kebebasan Sisaan",
+                                                 collapsible = TRUE, width=12,
+                                                 verbatimTextOutput(outputId = "autokor_ral")),
+                                             box(title = "Uji Kenormalan Sisaan",
+                                                 collapsible = TRUE, width=12,
+                                                 verbatimTextOutput(outputId = "normalitas_ral"))),
                                   )
                                 )
                                     
@@ -114,31 +125,70 @@ server <- function(input, output, session){
     updateSelectInput(session = session, inputId = "var2",label = "Pilih Variabel Perlakuan",
                       choices = colnames(inData())[!(colnames(inData()) %in% input$var1)])})
   
+  datanew <- reactive({
+    y <- as.numeric(inData()[[input$var1]])
+    x <- as.factor(inData()[[input$var2]])
+    datafix <- data.frame(x,y)
+    return(datafix)
+  })
+  
+  modelral <- reactive({
+    modelral1 <- lm(y~x,datanew())
+    return(modelral1)
+  })
+  
   anovaral <- reactive({
     if(is.null(input$var2)){
       return(NULL)
     }
     else{
-      return(aov(as.formula(paste(input$var1," ~ ",paste(input$var2,collapse="+"))),data=inData()))
+      return(aov(y~x,datanew()))
     }
   })
   
   output$anova_ral <- renderPrint(summary(anovaral()))
   
   lsdral <- reactive({
-     lsdral1 <- LSD.test(anovaral(),paste(input$var2), p.adj="none")
+     lsdral1 <- LSD.test(anovaral(),"x", p.adj="none")
      return(lsdral1)
   })
   
   output$ujilanjut_rallsd <- renderPrint(lsdral())
   
   tukeyral <- reactive({
-    tukeyral1 <- TukeyHSD(anovaral(),paste(input$var2))
+    tukeyral1 <- TukeyHSD(anovaral(),"x")
     return(tukeyral1)
   })
   
   output$ujilanjut_raltukey <- renderPrint(tukeyral())
   
+  duncanral <- reactive({
+    duncanral1 <- duncan.test(anovaral(),"x",group = T, console = T)
+    return(duncanral1)
+  })
+  
+  output$ujilanjut_ralduncan <- renderPrint(duncanral())
+  
+  heteroral <- reactive({
+    heteroral1 <- bptest(modelral())
+    return(heteroral1)
+  })
+  
+  output$homoskedastis_ral <- renderPrint(heteroral())
+  
+  autokorral <- reactive({
+    autocorral1 <- runs.test(modelral()$residuals)
+    return(autocorral1)
+  })
+  
+  output$autokor_ral <- renderPrint(autokorral())
+  
+  normalral <- reactive({
+    normalral1 <- shapiro.test(modelral()$residuals)
+    return(normalral1)
+  })
+  
+  output$normalitas_ral <- renderPrint(normalral())
 
 }
 

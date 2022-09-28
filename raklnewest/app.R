@@ -88,7 +88,7 @@ ui <- dashboardPage(skin = "blue",
                                                               box(title = "Uji LSD",
                                                                   collapsible = TRUE, width = 12, 
                                                                   verbatimTextOutput(outputId = "ujilanjut_rakllsd"),
-                                                                  plotOutput(outputId = "ujilanjut_lsd_plot")))),
+                                                                  plotOutput(outputId = "ujilanjut_lsd_plot"))),
                                              conditionalPanel(condition = "input.ujilanjutrakl == 'Ujitukeyrakl'",
                                                               box(title = "Uji Tukey",
                                                                   collapsible = TRUE, width = 12,
@@ -98,7 +98,7 @@ ui <- dashboardPage(skin = "blue",
                                                               box(title = "Uji Duncan",
                                                                   collapsible = TRUE, width = 12, 
                                                                   verbatimTextOutput(outputId = "ujilanjut_raklduncan"),
-                                                                  plotOutput(outputId = "ujilanjut_raklduncan_plot"))),
+                                                                  plotOutput(outputId = "ujilanjut_raklduncan_plot")))),
                                     tabPanel("Uji Asumsi",
                                              box(title = "Uji Kesamaan Ragam Sisaan",
                                                  collapsible = TRUE, width = 12,
@@ -117,8 +117,7 @@ ui <- dashboardPage(skin = "blue",
                                 
                         )
                       )
-                      
-                    )
+)
 server <- function(input, output, session){
   inData <- reactive({file <- input$file
   ext <- tools::file_ext(file$datapath)

@@ -76,7 +76,7 @@ ui <- dashboardPage(skin = "blue",
                                     
                                     tabPanel("Anova",
                                              verbatimTextOutput(outputId = "anova_rbsl"),
-                                             verbatimTextOutput(outputId = "anova.result")),
+                                             verbatimTextOutput(outputId = "anova_rbsl.result")),
                                     
                                     tabPanel("Uji Lanjut",
                                              selectInput(inputId = "sel.lanjutrbsl",
@@ -111,13 +111,33 @@ ui <- dashboardPage(skin = "blue",
                                     tabPanel("Uji Asumsi",
                                              box(title = "Uji Kesamaan Ragam Sisaan",
                                                  collapsible = TRUE, width=12,
-                                                 verbatimTextOutput(outputId = "homoskedastis_rbsl")),
+                                                 selectInput(inputId = "sel.heterorbsl",
+                                                             label = "Pilih Jenis Uji",
+                                                             choices = c("Breusch-Pagan" = "Breusch-Pagan",
+                                                                         "Glejser" = "Glejser"),
+                                                             selected = "Breusch-Pagan"),
+                                                 verbatimTextOutput(outputId = "homoskedastis_rbsl"),
+                                                 verbatimTextOutput(outputId = "homoskedastis_rbsl.result")),
                                              box(title = "Uji Kebebasan Sisaan",
                                                  collapsible = TRUE, width=12,
-                                                 verbatimTextOutput(outputId = "autokor_rbsl")),
+                                                 selectInput(inputId = "sel.autorbsl",
+                                                             label = "Pilih Jenis Uji",
+                                                             choices = c("Durbin-Watson" = "Durbin-Watson",
+                                                                         "Breusch-Godfrey" = "Breusch-Godfrey"),
+                                                             selected = "Durbin-Watson"),
+                                                 verbatimTextOutput(outputId = "autokor_rbsl"),
+                                                 verbatimTextOutput(outputId = "autokor_rbsl.result")),
                                              box(title = "Uji Kenormalan Sisaan",
                                                  collapsible = TRUE, width=12,
-                                                 verbatimTextOutput(outputId = "normalitas_rbsl"))),
+                                                 selectInput(inputId = "sel.normrbsl",
+                                                             label = "Pilih Jenis Uji",
+                                                             choices = c("Shapiro-Wilk"="Shapiro-Wilk",
+                                                                         "Kolmogorov-Smirnov"= "Kolmogorov-Smirnov",
+                                                                         "Anderson-Darling" = "Anderson-Darling"
+                                                             ),
+                                                             selected = "Shapiro-Wilk"),
+                                                 verbatimTextOutput(outputId = "normalitas_rbsl"),
+                                                 verbatimTextOutput(outputId = "normalitas_rbsl.result"))),
                                   )
                                 )
                                 
@@ -224,7 +244,6 @@ server <- function(input, output, session){
   })
   
   output$anova_rbsl <- renderPrint(summary(anovarbsl()))
-  
   
   lsdrbsl <- reactive({
     req(anovarbsl())
@@ -371,29 +390,92 @@ server <- function(input, output, session){
   })
   
   heterorbsl <- reactive({
-    heterorbsl1 <- bptest(modelrbsl())
-    return(heterorbsl1)
+    req(input$sel.heterorbsl)
+    if(input$sel.heterorbsl == "Breusch-Pagan"){
+      heterorbsl1 <- bptest(modelrbsl())
+      return(heterorbsl1)
+    }
+    else if(input$sel.heterorbsl == "Glejser"){
+      return(skedastic::glejser(modelrbsl()))
+    }
   })
   
   output$homoskedastis_rbsl <- renderPrint(heterorbsl())
   
+  heterorbsl.result <- reactive({
+    req(heterorbsl())
+    if(heterorbsl()$p.value > 0.05){
+      return("Sisaan tidak heterogen")
+    }
+    else{
+      return("Sisaan heterogen")
+    }
+  })
+  
+  output$homoskedastis_rbsl.result <- renderPrint({
+    req(heterorbsl.result())
+    print(heterorbsl.result())
+  })
+  
   autokorrbsl <- reactive({
-    autocorrbsl1 <- runs.test(modelrbsl()$residuals)
-    return(autocorrbsl1)
+    req(input$sel.autorbsl)
+    if(input$sel.autorbsl == "Durbin-Watson"){
+      return(lmtest::dwtest(modelrbsl()))  
+    }
+    else if(input$sel.autorbsl == "Breusch-Godfrey"){
+      return(lmtest::bgtest(modelrbsl()))
+    }
   })
   
   output$autokor_rbsl <- renderPrint(autokorrbsl())
   
+  autokorrbsl.result <- reactive({
+    req(autokorrbsl())
+    if(autokorrbsl()$p.value > 0.05){
+      return("Tidak ada autokorelasi")
+    }
+    else{
+      return("Ada Autokorelasi")
+    }
+  })
+  
+  output$autokor_rbsl.result <- renderPrint({
+    req(autokorrbsl.result())
+    print(autokorrbsl.result())
+  })
+  
   normalrbsl <- reactive({
-    normalrbsl1 <- shapiro.test(modelrbsl()$residuals)
-    return(normalrbsl1)
+    req(input$sel.normrbsl)
+    if(input$sel.normrbsl == "Shapiro-Wilk"){
+      normalrbsl1 <- shapiro.test(modelrbsl()$residuals)
+      return(normalrbsl1) 
+    }
+    else if(input$sel.normrbsl == "Kolmogorov-Smirnov"){
+      return(stats::ks.test(modelrbsl()$residuals, y = pnorm))
+    }
+    else if(input$sel.normrbsl == "Anderson-Darling"){
+      return(nortest::ad.test(modelrbsl()$residuals))
+    }
   })
   
   output$normalitas_rbsl <- renderPrint(normalrbsl())
   
+  normalrbsl.result <- reactive({
+    req(normalrbsl())
+    if(normalrbsl()$p.value > 0.05) {
+      return("Sisaan Menyebar normal")
+    }
+    else{
+      return("Sisaan Tidak menyebar normal")
+    }
+  })
   
-  
+  output$normalitas_rbsl.result <- renderPrint({
+    req(normalrbsl.result())
+    print(normalrbsl.result())
+  })
   
 }
 
 shinyApp(ui, server)
+

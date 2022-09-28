@@ -72,15 +72,19 @@ ui <- dashboardPage(skin = "blue",
                                                          selected = NULL),
                                              conditionalPanel(condition = "input.ujilanjutral == 'Ujilsdral'",
                                                               box(title = "Uji LSD",
-                                                                  collapsible = TRUE, width=12,verbatimTextOutput(outputId = "ujilanjut_rallsd"))),
+                                                                  collapsible = TRUE, width=12,
+                                                                  verbatimTextOutput(outputId = "ujilanjut_rallsd"),
+                                                                  plotOutput(outputId = "plotlsdral"))),
                                              conditionalPanel(condition = "input.ujilanjutral == 'Ujitukeyral'",
                                                               box(title = "Uji Tukey",
                                                                   collapsible = TRUE,width=12,
-                                                                  verbatimTextOutput(outputId = "ujilanjut_raltukey"))),
+                                                                  verbatimTextOutput(outputId = "ujilanjut_raltukey"),
+                                                                  plotOutput(outputId = "plottukeyral"))),
                                              conditionalPanel(condition = "input.ujilanjutral == 'Ujiduncanral'",
                                                               box(title = "Uji Duncan",
                                                                   collapsible = TRUE,width=12,
-                                                                  verbatimTextOutput(outputId = "ujilanjut_ralduncan")))),
+                                                                  verbatimTextOutput(outputId = "ujilanjut_ralduncan"),
+                                                                  plotOutput(outputId = "plotduncanral")))),
                                     tabPanel("Uji Asumsi",
                                              box(title = "Uji Kesamaan Ragam Sisaan",
                                                  collapsible = TRUE, width=12,
@@ -100,7 +104,7 @@ ui <- dashboardPage(skin = "blue",
                     )
 )
 server <- function(input, output, session){
-  inData <- reactive({file <- input$file
+  inDataral <- reactive({file <- input$file
   ext <- tools::file_ext(file$datapath)
   req(file)
   
@@ -126,22 +130,22 @@ server <- function(input, output, session){
   
   
   
-  output$tabel_ral <- renderDataTable(inData(), options = list(pageLength = 10))
+  output$tabel_ral <- renderDataTable(inDataral(), options = list(pageLength = 10))
   
-  output$summary_ral <- renderPrint(summary(inData()))
+  output$summary_ral <- renderPrint(summary(inDataral()))
   
   observe(
     updateSelectInput(session = session, inputId = "var1", 
-                      label = "Pilih Variabel Respon", choices = colnames(inData())[sapply(inData(), is.numeric)])
+                      label = "Pilih Variabel Respon", choices = colnames(inDataral())[sapply(inDataral(), is.numeric)])
   )
   
   observeEvent(input$var1,{
     updateSelectInput(session = session, inputId = "var2",label = "Pilih Variabel Perlakuan",
-                      choices = colnames(inData())[!(colnames(inData()) %in% input$var1)])})
+                      choices = colnames(inDataral())[!(colnames(inDataral()) %in% input$var1)])})
   
   datanew <- reactive({
-    y <- as.numeric(inData()[[input$var1]])
-    x <- as.factor(inData()[[input$var2]])
+    y <- as.numeric(inDataral()[[input$var1]])
+    x <- as.factor(inDataral()[[input$var2]])
     datafix <- data.frame(x,y)
     return(datafix)
   })
@@ -178,6 +182,22 @@ server <- function(input, output, session){
     isolate(lsdral())
   })
   
+  lsdralplot <- reactive({
+    req(anovaral())
+    if(input$sel.lanjutral == "Tidak Ada"){
+      return("Tidak Ada Variabel yang Signifikan")
+    }
+    else if(input$sel.lanjutral == "Perlakuan"){
+      lsdral1 <- LSD.test(anovaral(),"x", p.adj="none")
+      return(plot(lsdral1))
+    }
+  })
+  
+  output$plotlsdral <- renderPlot({
+    input$kliklanjutral
+    isolate(lsdralplot())
+    })
+  
   tukeyral <- reactive({
     req(anovaral())
     if(input$sel.lanjutral == "Tidak Ada"){
@@ -194,6 +214,22 @@ server <- function(input, output, session){
     isolate(tukeyral())
   })
   
+  tukeyralplot <- reactive({
+    req(anovaral())
+    if(input$sel.lanjutral == "Tidak Ada"){
+      return("Tidak Ada Variabel yang Signifikan")
+    }
+    else if(input$sel.lanjutral == "Perlakuan"){
+      tukeyral1 <- TukeyHSD(anovaral(),"x")
+      return(plot(tukeyral1))
+    }
+  })
+  
+  output$plottukeyral <- renderPlot({
+    input$kliklanjutral
+    isolate(tukeyralplot())
+  })
+  
   duncanral <- reactive({
     req(anovaral())
     if(input$sel.lanjutral == "Tidak Ada"){
@@ -208,6 +244,22 @@ server <- function(input, output, session){
   output$ujilanjut_ralduncan <- renderPrint({
     input$kliklanjutral
     isolate(duncanral())
+  })
+  
+  duncanralplot <- reactive({
+    req(anovaral())
+    if(input$sel.lanjutral == "Tidak Ada"){
+      return("Tidak Ada Variabel yang Signifikan")
+    }
+    else if(input$sel.lanjutral == "Perlakuan"){
+      duncanral1 <- duncan.test(anovaral(),"x",group = T, console = T)
+      return(plot(duncanral1))
+    }
+  })
+  
+  output$plotduncanral <- renderPlot({
+    input$kliklanjutral
+    isolate(duncanralplot())
   })
   
   heteroral <- reactive({

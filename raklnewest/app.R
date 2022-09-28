@@ -81,6 +81,9 @@ ui <- dashboardPage(skin = "blue",
                                              box(title = "Uji LSD",
                                                  collapsible = TRUE, width=12,
                                                  verbatimTextOutput(outputId = "ujilanjut_rakllsd")),
+                                             box(title = "Plot Uji LSD",
+                                                 height = "480px", collapsible = TRUE, width = 12,
+                                                 plotOutput(outputId = "ujilanjut_lsd_plot")),
                                              box(title = "Uji Tukey",
                                                  collapsible = TRUE,width=12,
                                                  verbatimTextOutput(outputId = "ujilanjut_rakltukey")),
@@ -89,7 +92,10 @@ ui <- dashboardPage(skin = "blue",
                                                  plotOutput(outputId = "ujilanjut_rakltukey_plot")),
                                              box(title = "Uji Duncan",
                                                  collapsible = TRUE,width=12,
-                                                 verbatimTextOutput(outputId = "ujilanjut_raklduncan"))),
+                                                 verbatimTextOutput(outputId = "ujilanjut_raklduncan")),
+                                             box(title = "Plot Uji Duncan",
+                                                 height = "480px", collapsible = TRUE, width = 12,
+                                                 plotOutput(outputId = "ujilanjut_duncan_plot"))),
                                     tabPanel("Uji Asumsi",
                                              box(title = "Uji Asumsi Normalitas",
                                                  height = "280px",
@@ -219,7 +225,17 @@ server <- function(input, output, session){
     return(lsdrakl1)
   })
   
+  lsdrakl2 <- reactive({
+    Respon <- as.numeric(inData()[[input$varr1]])
+    Perlakuan <- as.factor(inData()[[input$varr2]])
+    Kelompok <- as.factor(inData()[[input$varr3]])
+    lsdrakl1 <- LSD.test(anovarakl(),"Perlakuan", p.adj="none")
+    plot(lsdrakl1)
+  })
+  
   output$ujilanjut_rakllsd <- renderPrint(lsdrakl())
+  
+  output$ujilanjut_lsd_plot <-  renderPlot((lsdrakl2()))
   
   tukeyrakl <- reactive({
     Respon <- as.numeric(inData()[[input$varr1]])
@@ -249,7 +265,17 @@ server <- function(input, output, session){
     return(duncanrakl1)
   })
   
+  duncanrakl2 <-reactive({
+    Respon <- as.numeric(inData()[[input$varr1]])
+    Perlakuan <- as.factor(inData()[[input$varr2]])
+    Kelompok <- as.factor(inData()[[input$varr3]])
+    duncanrakl1 <- duncan.test(anovarakl(), "Perlakuan")
+    plot(duncanrakl1)
+  })
+  
   output$ujilanjut_raklduncan <- renderPrint(duncanrakl())
+  
+  output$ujilanjut_duncan_plot <-  renderPlot((duncanrakl2()))
   
   norm.result1<-reactive({
     norm.result1<-shapiro.test(anovarakl())

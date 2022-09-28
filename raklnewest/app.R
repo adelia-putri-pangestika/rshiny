@@ -2,6 +2,9 @@ library(shiny)
 library(shinydashboard)
 library(stringr)
 library(agricolae)
+library(lmtest)
+library(car)
+library(randtests)
 
 ui <- dashboardPage(skin = "blue",
                     dashboardHeader(title = "Experimental Design"),
@@ -97,40 +100,18 @@ ui <- dashboardPage(skin = "blue",
                                                  height = "480px", collapsible = TRUE, width = 12,
                                                  plotOutput(outputId = "ujilanjut_duncan_plot"))),
                                     tabPanel("Uji Asumsi",
-                                             box(title = "Uji Asumsi Normalitas",
-                                                 height = "280px",
-                                                 selectInput(inputId = "sel.norm",
-                                                             label = "Pilih Jenis Uji",
-                                                             choices = c("Shapiro-Wilk"="Shapiro-Wilk",
-                                                                         "Kolmogorov-Smirnov"= "Kolmogorov-Smirnov",
-                                                                         "Anderson-Darling" = "Anderson-Darling"
-                                                             ),
-                                                             selected = "Shapiro-Wilk"),
-                                                 verbatimTextOutput(outputId = "norm"),
-                                                 verbatimTextOutput(outputId = "norm.result")),
-                                             box(title = "Uji Asumsi Heteroskedastisitas",
-                                                 height = "280px",
-                                                 selectInput(inputId = "sel.hetero",
-                                                             label = "Pilih Jenis Uji",
-                                                             choices = c("Breusch-Pagan" = "Breusch-Pagan",
-                                                                         "Glesjer" = "Glesjer"
-                                                             ),
-                                                             selected = "Breusch-Pagan"),
-                                                 verbatimTextOutput(outputId = "hetero"),
-                                                 verbatimTextOutput(outputId = "hetero.result")),
-                                             box(title = "Uji Asumsi Autokorelasi",
-                                                 height = "280px",
-                                                 selectInput(inputId = "sel.auto",
-                                                             label = "Pilih Jenis Uji",
-                                                             choices = c("Durbin-Watson" = "Durbin-Watson",
-                                                                         "Breusch-Godfrey" = "Breusch-Godfrey"
-                                                             ),
-                                                             selected = "Durbin-Watson"),
-                                                 verbatimTextOutput(outputId = "auto"),
-                                                 verbatimTextOutput(outputId = "auto.result")),
+                                             box(title = "Uji Kesamaan Ragam Sisaan",
+                                                 collapsible = TRUE, width = 12,
+                                                 verbatimTextOutput(outputId = "homoskedastis_rakl")),
+                                             box(title = "Uji Kebebasan Sisaan",
+                                                 collapsible = TRUE, width = 12,
+                                                 verbatimTextOutput(outputId = "autkor_rakl")),
+                                             box(title = "Uji Kenormalan Sisaan",
+                                                 collapsible = TRUE, width = 12,
+                                                 verbatimTextOutput(outputId = "normalitas_rakl"))),
                                     )
                                     
-                                  ),
+                                  )
                                   
                                 )
                                 
@@ -138,7 +119,6 @@ ui <- dashboardPage(skin = "blue",
                       )
                       
                     )
-)
 server <- function(input, output, session){
   inData <- reactive({file <- input$file
   ext <- tools::file_ext(file$datapath)
@@ -277,11 +257,26 @@ server <- function(input, output, session){
   
   output$ujilanjut_duncan_plot <-  renderPlot((duncanrakl2()))
   
-  norm.result1<-reactive({
-    norm.result1<-shapiro.test(anovarakl())
+  heterorakl <- reactive({
+    heterorakl1 <- bptest(anovarakl())
+    return(heterorakl1)
   })
   
-  output$norm.result <- renderPrint(norm.result1())
+  output$homoskedastis_rakl <- renderPrint(heterorakl())
+  
+  autokorrakl <- reactive({
+    autokorrakl1 <- runs.test(anovarakl()$residuals)
+    return(autokorrakl1)
+  })
+  
+  output$autokor_rakl <- renderPrint(autokorrakl())
+  
+  normalrakl <- reactive({
+    normalrakl1 <- shapiro.test(anovarakl()$residuals)
+    return(normalrakl1)
+  })
+  
+  output$normalitas_rakl <- renderPrint(normalrakl())
   
 }
 

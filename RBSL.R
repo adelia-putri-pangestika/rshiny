@@ -20,7 +20,7 @@ ui <- dashboardPage(skin = "blue",
                                   box(title = "Data",
                                       status = "primary",
                                       solidHeader = T,
-                                      fileInput(inputId = "file", label = "Masukkan File", multiple = FALSE,
+                                      fileInput(inputId = "filerbsl", label = "Masukkan File", multiple = FALSE,
                                                 accept = c("text/csv", ".csv", 
                                                            "text/comma-separated-values,text/plain",
                                                            ".xlsx",".xls"), 
@@ -39,16 +39,16 @@ ui <- dashboardPage(skin = "blue",
                                   box(title = "Peubah",
                                       status = "primary",
                                       solidHeader = T,
-                                      selectInput(inputId = "var1",
+                                      selectInput(inputId = "variabel1",
                                                   label = "Pilih Variabel Respon",
                                                   choices = NULL),
-                                      selectInput(inputId = "var2",
+                                      selectInput(inputId = "variabel2",
                                                   label = "Pilih Variabel Perlakuan",
                                                   choices = NULL),
-                                      selectInput(inputId = "var3",
+                                      selectInput(inputId = "variabel3",
                                                   label = "Pilih Variabel Baris",
                                                   choices = NULL),
-                                      selectInput(inputId = "var4",
+                                      selectInput(inputId = "variabel4",
                                                   label = "Pilih Variabel KOlom",
                                                   choices = NULL))
                                   
@@ -147,13 +147,13 @@ ui <- dashboardPage(skin = "blue",
                     )
 )
 server <- function(input, output, session){
-  inDatarbsl <- reactive({file <- input$file
-  ext <- tools::file_ext(file$datapath)
-  req(file)
+  inDatarbsl <- reactive({filerbsl <- input$filerbsl
+  ext <- tools::file_ext(filerbsl$datapath)
+  req(filerbsl)
   
   if(ext == "txt" | ext == "csv"){
     
-    dataIn <- read.table(file$datapath, sep = input$pemisah, header = input$header)
+    dataIn <- read.table(filerbsl$datapath, sep = input$pemisah, header = input$header)
     
     if(input$header == T) {
       main <- colnames(dataIn)
@@ -166,7 +166,7 @@ server <- function(input, output, session){
   }
   
   else{
-    dataIn <- readxl::read_excel(file$datapath, col_names = input$header)
+    dataIn <- readxl::read_excel(filerbsl$datapath, col_names = input$header)
   }
   
   })
@@ -176,55 +176,55 @@ server <- function(input, output, session){
   
   
   observe(
-    updateSelectInput(session = session, inputId = "var1", 
+    updateSelectInput(session = session, inputId = "variabel1", 
                       label = "Pilih Variabel Respon", choices = colnames(inDatarbsl()))
   )
   
-  observeEvent(input$var1,{
-    updateSelectInput(session = session, inputId = "var2",label = "Pilih Variabel Perlakuan",
-                      choices = colnames(inDatarbsl())[!(colnames(inDatarbsl()) %in% input$var1)])})
+  observeEvent(input$variabel1,{
+    updateSelectInput(session = session, inputId = "variabel2",label = "Pilih Variabel Perlakuan",
+                      choices = colnames(inDatarbsl())[!(colnames(inDatarbsl()) %in% input$variabel1)])})
   
-  observeEvent(input$var2,{
-    updateSelectInput(session = session, inputId = "var3",label = "Pilih Variabel Baris",
-                      choices = colnames(inDatarbsl())[!(colnames(inDatarbsl()) %in% input$var2 )])})
+  observeEvent(input$variabel2,{
+    updateSelectInput(session = session, inputId = "variabel3",label = "Pilih Variabel Baris",
+                      choices = colnames(inDatarbsl())[!(colnames(inDatarbsl()) %in% input$variabel2 )])})
   
-  observeEvent(input$var3,{
-    updateSelectInput(session = session, inputId = "var4",label = "Pilih Variabel Kolom",
-                      choices = colnames(inDatarbsl())[!(colnames(inDatarbsl()) %in% input$var3)])})
+  observeEvent(input$variabel3,{
+    updateSelectInput(session = session, inputId = "variabel4",label = "Pilih Variabel Kolom",
+                      choices = colnames(inDatarbsl())[!(colnames(inDatarbsl()) %in% input$variabel3)])})
   
   summaryresponrbsl <- reactive({
-    Respon <- as.numeric(inDatarbsl()[[input$var1]])
+    Respon <- as.numeric(inDatarbsl()[[input$variabel1]])
     summary(Respon)
   })
   
   output$summary_responrbsl <- renderPrint(summaryresponrbsl())
   
   summaryperlakuanrbsl <- reactive({
-    Perlakuan <- as.factor(inDatarbsl()[[input$var2]])
+    Perlakuan <- as.factor(inDatarbsl()[[input$variabel2]])
     summary(Perlakuan)
   })
   
   output$summary_perlakuanrbsl <- renderPrint(summaryperlakuanrbsl())
   
   summarybarisrbsl <- reactive({
-    Baris <- as.factor(inDatarbsl()[[input$var3]])
+    Baris <- as.factor(inDatarbsl()[[input$variabel3]])
     summary(Baris)
   })
   
   output$summary_barisrbsl <- renderPrint(summarybarisrbsl())
   
   summarykolomrbsl <- reactive({
-    Kolom <- as.factor(inDatarbsl()[[input$var3]])
+    Kolom <- as.factor(inDatarbsl()[[input$variabel3]])
     summary(Kolom)
   })
   
   output$summary_kolomrbsl <- renderPrint(summarykolomrbsl())
   
   datarbsl <- reactive({
-    Respon <- as.numeric(inDatarbsl()[[input$var1]])
-    Perlakuan <- as.factor(inDatarbsl()[[input$var2]])
-    Baris <- as.factor(inDatarbsl()[[input$var3]])
-    Kolom <- as.factor(inDatarbsl()[[input$var4]])
+    Respon <- as.numeric(inDatarbsl()[[input$variabel1]])
+    Perlakuan <- as.factor(inDatarbsl()[[input$variabel2]])
+    Baris <- as.factor(inDatarbsl()[[input$variabel3]])
+    Kolom <- as.factor(inDatarbsl()[[input$variabel4]])
     data.rbsl <- data.frame(Respon, Perlakuan, Baris, Kolom)
     return(data.rbsl)
   })
@@ -235,7 +235,7 @@ server <- function(input, output, session){
   })
   
   anovarbsl <- reactive({
-    if(is.null(input$var2)){
+    if(is.null(input$variabel2)){
       return(NULL)
     }
     else{

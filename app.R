@@ -2,6 +2,9 @@ library(shiny)
 library(shinydashboard)
 library(stringr)
 library(agricolae)
+library(lmtest)
+library(car)
+library(randtests)
 
 ui <- dashboardPage(skin = "blue",
                     dashboardHeader(title = "Experimental Design"),
@@ -37,16 +40,16 @@ ui <- dashboardPage(skin = "blue",
                                       status = "primary",
                                       solidHeader = T,
                                       selectInput(inputId = "var1",
-                                                  label = "Pilih Baris",
+                                                  label = "Pilih Variabel Respon",
                                                   choices = NULL),
                                       selectInput(inputId = "var2",
-                                                  label = "Pilih Kolom",
+                                                  label = "Pilih Variabel Perlakuan",
                                                   choices = NULL),
                                       selectInput(inputId = "var3",
-                                                  label = "Pilih Perlakuan",
+                                                  label = "Pilih Variabel Baris",
                                                   choices = NULL),
                                       selectInput(inputId = "var4",
-                                                  label = "Pilih Respon",
+                                                  label = "Pilih Variabel KOlom",
                                                   choices = NULL))
                                   
                                 ),
@@ -58,61 +61,66 @@ ui <- dashboardPage(skin = "blue",
                                     tabPanel("Data",
                                              dataTableOutput(outputId = "tabel_rbsl")),
                                     tabPanel("Data Summary",
-                                             verbatimTextOutput(outputId = "summary_rbsl")),
+                                             box(title = "Summary Respon",
+                                                 collapsible = TRUE, width=12,
+                                                 verbatimTextOutput(outputId = "summary_responrbsl")),
+                                             box(title = "Summary Perlakuan",
+                                                 collapsible = TRUE, width=12,
+                                                 verbatimTextOutput(outputId = "summary_perlakuanrbsl")),
+                                             box(title = "Summary Baris",
+                                                 collapsible = TRUE, width = 12,
+                                                 verbatimTextOutput(outputId = "summary_barisrbsl")),
+                                             box(title = "Summary Kolom",
+                                                 collapsible = TRUE, width = 12,
+                                                 verbatimTextOutput(outputId = "summary_kolomrbsl"))),
+                                    
                                     tabPanel("Anova",
                                              verbatimTextOutput(outputId = "anova_rbsl"),
                                              verbatimTextOutput(outputId = "anova.result")),
                                     tabPanel("Uji Lanjut",
                                              box(title = "Uji LSD",
                                                  collapsible = TRUE, width=12,
+                                                 selectInput(inputId = "sel.lsdrbsl",
+                                                             label = "Pilih Variabel Signifikan",
+                                                             choices = c("Tidak Ada" = "Tidak Ada",
+                                                                         "Perlakuan" = "Perlakuan",
+                                                                         "Baris" = "Baris",
+                                                                         "Kolom" = "Kolom"),
+                                                             selected = NULL),
+                                                 actionButton("kliklsdrbsl","Pilih"),
                                                  verbatimTextOutput(outputId = "ujilanjut_rbsllsd")),
                                              box(title = "Uji Tukey",
                                                  collapsible = TRUE,width=12,
+                                                 selectInput(inputId = "sel.tukeyrbsl",
+                                                             label = "Pilih Variabel Signifikan",
+                                                             choices = c("Tidak Ada" = "Tidak Ada",
+                                                                         "Perlakuan" = "Perlakuan",
+                                                                         "Baris" = "Baris",
+                                                                         "Kolom" = "Kolom"),
+                                                             selected = "Tidak Ada"),
+                                                 actionButton("kliktukeyrbsl","Pilih"),
                                                  verbatimTextOutput(outputId = "ujilanjut_rbsltukey")),
                                              box(title = "Uji Duncan",
                                                  collapsible = TRUE,width=12,
+                                                 selectInput(inputId = "sel.duncanrbsl",
+                                                             label = "Pilih Variabel Signifikan",
+                                                             choices = c("Tidak Ada" = "Tidak Ada",
+                                                                         "Perlakuan" = "Perlakuan",
+                                                                         "Baris" = "Baris",
+                                                                         "Kolom" = "Kolom"),
+                                                             selected = "Tidak Ada"),
+                                                 actionButton("klikduncanrbsl","Pilih"),
                                                  verbatimTextOutput(outputId = "ujilanjut_rbslduncan"))),
-                                    tabPanel(
-                                      "Uji Asumsi",
-                                      conditionalPanel(
-                                        condition = "output.anova",
-                                        box(title = "Uji Asumsi Normalitas",
-                                            height = "280px",
-                                            selectInput(inputId = "sel.norm",
-                                                        label = "Pilih Jenis Uji",
-                                                        choices = c("Shapiro-Wilk"="Shapiro-Wilk",
-                                                                    "Kolmogorov-Smirnov"= "Kolmogorov-Smirnov",
-                                                                    "Anderson-Darling" = "Anderson-Darling"
-                                                        ),
-                                                        selected = "Shapiro-Wilk"),
-                                            verbatimTextOutput(outputId = "norm"),
-                                            verbatimTextOutput(outputId = "norm.result")),
-                                        
-                                        box(title = "Uji Asumsi Heteroskedastisitas",
-                                            height = "280px",
-                                            selectInput(inputId = "sel.hetero",
-                                                        label = "Pilih Jenis Uji",
-                                                        choices = c("Breusch-Pagan" = "Breusch-Pagan",
-                                                                    "Glesjer" = "Glesjer"),
-                                                        selected = "Breusch-Pagan"),
-                                            verbatimTextOutput(outputId = "hetero"),
-                                            verbatimTextOutput(outputId = "hetero.result")),
-                                        
-                                        box(title = "Uji Asumsi Autokorelasi",
-                                            height = "280px",
-                                            selectInput(inputId = "sel.auto",
-                                                        label = "Pilih Jenis Uji",
-                                                        choices = c("Durbin-Watson" = "Durbin-Watson",
-                                                                    "Breusch-Godfrey" = "Breusch-Godfrey"),
-                                                        selected = "Durbin-Watson"),
-                                            verbatimTextOutput(outputId = "auto"),
-                                            verbatimTextOutput(outputId = "auto.result")),
-                                        
-                                        box(title = "Ringkasan",
-                                            height = "280px",
-                                            tableOutput(outputId = "ringkas_uji"))
-                                      )
-                                    )
+                                    tabPanel("Uji Asumsi",
+                                             box(title = "Uji Kesamaan Ragam Sisaan",
+                                                 collapsible = TRUE, width=12,
+                                                 verbatimTextOutput(outputId = "homoskedastis_rbsl")),
+                                             box(title = "Uji Kebebasan Sisaan",
+                                                 collapsible = TRUE, width=12,
+                                                 verbatimTextOutput(outputId = "autokor_rbsl")),
+                                             box(title = "Uji Kenormalan Sisaan",
+                                                 collapsible = TRUE, width=12,
+                                                 verbatimTextOutput(outputId = "normalitas_rbsl"))),
                                   )
                                 )
                                 
@@ -152,33 +160,73 @@ server <- function(input, output, session){
   
   observe(
     updateSelectInput(session = session, inputId = "var1", 
-                      label = "Pilih Variabel Baris", choices = colnames(inData()))
+                      label = "Pilih Variabel Respon", choices = colnames(inData()))
   )
   
   observeEvent(input$var1,{
-    updateSelectInput(session = session, inputId = "var2",label = "Pilih Variabel Kolom",
+    updateSelectInput(session = session, inputId = "var2",label = "Pilih Variabel Perlakuan",
                       choices = colnames(inData())[!(colnames(inData()) %in% input$var1)])})
   
   observeEvent(input$var2,{
-    updateSelectInput(session = session, inputId = "var3",label = "Pilih Variabel Perlakuan",
+    updateSelectInput(session = session, inputId = "var3",label = "Pilih Variabel Baris",
                       choices = colnames(inData())[!(colnames(inData()) %in% input$var2 )])})
   
   observeEvent(input$var3,{
-    updateSelectInput(session = session, inputId = "var4",label = "Pilih Variabel Respon",
+    updateSelectInput(session = session, inputId = "var4",label = "Pilih Variabel Kolom",
                       choices = colnames(inData())[!(colnames(inData()) %in% input$var3)])})
   
-  output$summary_rbsl <- renderPrint(summary(inData()))
+  summaryresponrbsl <- reactive({
+    Respon <- as.numeric(inData()[[input$var1]])
+    summary(Respon)
+  })
+  
+  output$summary_responrbsl <- renderPrint(summaryresponrbsl())
+  
+  summaryperlakuanrbsl <- reactive({
+    Perlakuan <- as.factor(inData()[[input$var2]])
+    summary(Perlakuan)
+  })
+  
+  output$summary_perlakuanrbsl <- renderPrint(summaryperlakuanrbsl())
+  
+  summarybarisrbsl <- reactive({
+    Baris <- as.factor(inData()[[input$var3]])
+    summary(Baris)
+  })
+  
+  output$summary_barisrbsl <- renderPrint(summarybarisrbsl())
+  
+  summarykolomrbsl <- reactive({
+    Kolom <- as.factor(inData()[[input$var3]])
+    summary(Kolom)
+  })
+  
+  output$summary_kolomrbsl <- renderPrint(summarykolomrbsl())
+  
+  datarbsl <- reactive({
+    Respon <- as.numeric(inData()[[input$var1]])
+    Perlakuan <- as.factor(inData()[[input$var2]])
+    Baris <- as.factor(inData()[[input$var3]])
+    Kolom <- as.factor(inData()[[input$var4]])
+    data.rbsl <- data.frame(Respon, Perlakuan, Baris, Kolom)
+    return(data.rbsl)
+  })
+  
+  modelrbsl <- reactive({
+    modelrbsl1 <- lm(Respon~Perlakuan+Baris+Kolom, data = datarbsl())
+    return(modelrbsl1)
+  })
   
   anovarbsl <- reactive({
     if(is.null(input$var1)){
       return(NULL)
     }
     else{
-      baris <- as.factor(inData()[[input$var1]])
-      kolom <- as.factor(inData()[[input$var2]])
-      perlakuan <- as.factor(inData()[[input$var3]])
-      respon <- as.numeric(inData()[[input$var4]])
-      return(aov(as.formula(respon ~ baris + kolom + perlakuan)))
+      Respon <- as.numeric(inData()[[input$var1]])
+      Perlakuan <- as.factor(inData()[[input$var2]])
+      Baris <- as.factor(inData()[[input$var3]])
+      Kolom <- as.factor(inData()[[input$var4]])
+      return(aov(as.formula(Respon ~ Perlakuan + Baris + Kolom)))
     }
   })
   
@@ -186,153 +234,76 @@ server <- function(input, output, session){
   
   
   lsdrbsl <- reactive({
-    baris <- as.factor(inData()[[input$var1]])
-    kolom <- as.factor(inData()[[input$var2]])
-    perlakuan <- as.factor(inData()[[input$var3]])
-    respon <- as.numeric(inData()[[input$var4]])
-    lsdrbsl1 <- LSD.test(anovarbsl(),"perlakuan", p.adj="none")
-    return(lsdrbsl1)
+    req(anovarbsl())
+    if(input$sel.lsdrbsl == "Tidak Ada"){
+      return("Tidak Ada Variabel yang Signifikan")
+    }
+    else if(input$sel.lsdrbsl == "Perlakuan"){
+      lsdrbsl1 <- LSD.test(anovarbsl(),"Perlakuan", p.adj="none")
+      return(lsdrbsl1)
+    }
   })
   
-  output$ujilanjut_rbsllsd <- renderPrint(lsdrbsl())
+  output$ujilanjut_rbsllsd <- renderPrint({
+    input$kliklsdrbsl
+    isolate(lsdrbsl())
+  })
   
   tukeyrbsl <- reactive({
-    baris <- as.factor(inData()[[input$var1]])
-    kolom <- as.factor(inData()[[input$var2]])
-    perlakuan <- as.factor(inData()[[input$var3]])
-    respon <- as.numeric(inData()[[input$var4]])
-    tukeyrbsl1 <- TukeyHSD(anovarbsl(),"perlakuan")
-    return(tukeyrbsl1)
+    req(anovarbsl())
+    if(input$sel.tukeyrbsl == "Tidak Ada"){
+      return("Tidak Ada Variabel yang Signifikan")
+    }
+    else if(input$sel.tukeyrbsl == "Perlakuan"){
+      tukeyrbsl1 <- TukeyHSD(anovarbsl(),"Perlakuan")
+      return(tukeyrbsl1)
+    }
+  })
+  
+  output$ujilanjut_rbsltukey <- renderPrint({
+    input$kliktukeyrbsl
+    isolate(tukeyrbsl())
   })
   
   duncanrbsl <- reactive({
-    baris <- as.factor(inData()[[input$var1]])
-    kolom <- as.factor(inData()[[input$var2]])
-    perlakuan <- as.factor(inData()[[input$var3]])
-    respon <- as.numeric(inData()[[input$var4]])
-    duncanrbsl1 <- duncan.test(anovarbsl(),"perlakuan",group = T, console = T)
-    return(duncanrbsl1)
-  })
-  
-  output$ujilanjut_rbslduncan <- renderPrint(duncanrbsl())
-  
-  
-  
-  asumsi.norm <- reactive({
-    req(anova_rbsl())
-    req(input$sel.norm)
-    if(input$sel.norm == "Shapiro-Wilk"){
-      return(stats::shapiro.test(anova_rbsl()$residuals))
+    req(anovarbsl())
+    if(input$sel.duncanrbsl == "Tidak Ada"){
+      return("Tidak Ada Variabel yang Signifikan")
     }
-    else if(input$sel.norm == "Kolmogorov-Smirnov"){
-      return(stats::ks.test(anova_rbsl()$residuals, y = pnorm))
-    }
-    else if(input$sel.norm == "Anderson-Darling"){
-      return(nortest::ad.test(anova_rbsl()$residuals))
+    else if(input$sel.duncanrbsl == "Perlakuan"){
+      duncanrbsl1 <- duncan.test(anovarbsl(),"Perlakuan",group = T, console = T)
+      return(duncanrbsl1)
     }
   })
   
-  norm.result <- reactive({
-    req(asumsi.norm())
-    if(asumsi.norm()$p.value > 0.05) {
-      return("Menyebar normal")
-    }
-    else{
-      return("Tidak menyebar normal")
-    }
+  output$ujilanjut_rbslduncan <- renderPrint({
+    input$klikduncanrbsl
+    isolate(duncanrbsl())
   })
   
-  output$norm <- renderPrint({
-    req(anova_rbsl())
-    print(asumsi.norm())
+  heterorbsl <- reactive({
+    heterorbsl1 <- bptest(modelrbsl())
+    return(heterorbsl1)
   })
   
-  output$norm.result <- renderPrint({
-    req(norm.result())
-    print(norm.result())
+  output$homoskedastis_rbsl <- renderPrint(heterorbsl())
+  
+  autokorrbsl <- reactive({
+    autocorrbsl1 <- runs.test(modelrbsl()$residuals)
+    return(autocorrbsl1)
   })
   
-  asumsi.hetero <- reactive({
-    req(anova_rbsl())
-    req(input$sel.hetero)
-    if(input$sel.hetero == "Breusch-Pagan"){
-      return(lmtest::bptest(anova_rbsl()))
-    }
-    else if(input$sel.hetero == "glejser"){
-      return(skedastic::glesjer(anova_rbsl()))
-    }
+  output$autokor_rbsl <- renderPrint(autokorrbsl())
+  
+  normalrbsl <- reactive({
+    normalrbsl1 <- shapiro.test(modelrbsl()$residuals)
+    return(normalrbsl1)
   })
   
-  hetero.result <- reactive({
-    req(asumsi.hetero())
-    if(asumsi.hetero()$p.value > 0.05){
-      return("Sisaan tidak heterogen")
-    }  
-    else{
-      return("Sisaan heterogen")
-    }
-  })
+  output$normalitas_rbsl <- renderPrint(normalrbsl())
   
   
-  output$hetero <- renderPrint({
-    req(anova_rbsl())
-    print(asumsi.hetero())
-  })
   
-  output$hetero.result <- renderPrint({
-    req(hetero.result())
-    print(hetero.result())
-  })
-  
-  asumsi.auto <- reactive({
-    req(anova_rbsl())
-    if(input$sel.auto == "Durbin-Watson"){
-      return(lmtest::dwtest(anova_rbsl()))  
-    }
-    else if(input$sel.auto == "Breusch-Godfrey"){
-      return(lmtest::bgtest(anova_rbsl()))
-    }
-    
-  })
-  
-  auto.result <- reactive({
-    req(asumsi.auto())
-    if(asumsi.auto()$p.value > 0.05){
-      return("Tidak ada autokorelasi")
-    }
-    else{
-      return("Ada Autokorelasi")
-    }
-  })
-  
-  output$auto <- renderPrint({
-    req(anova_rbsl())
-    print(asumsi.auto())
-    
-  })
-  
-  output$auto.result <- renderPrint({
-    req(auto.result())
-    print(auto.result())
-  })
-  
-  p.norm <- reactive(asumsi.norm()$p.value)
-  
-  p.hetero <- reactive(asumsi.hetero()$p.value)
-  
-  p.auto <- reactive(asumsi.auto()$p.value)
-  
-  output$ringkas_uji <- renderTable({
-    req(norm.result())
-    req(hetero.result())
-    req(auto.result())
-    data.frame(
-      "Jenis Asumsi" = c("Normalitas", "Heterokedastisitas", "Autokorelasi"),
-      "Jenis Uji" = c(input$sel.norm, input$sel.hetero, input$sel.auto),
-      "P-value" = c(p.norm(), p.hetero(), p.auto()),
-      "Keputusan" = c(paste(norm.result()), paste(hetero.result()), paste(auto.result()))
-    )}
-  )
   
 }
 

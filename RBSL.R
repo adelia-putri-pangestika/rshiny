@@ -77,6 +77,7 @@ ui <- dashboardPage(skin = "blue",
                                     tabPanel("Anova",
                                              verbatimTextOutput(outputId = "anova_rbsl"),
                                              verbatimTextOutput(outputId = "anova.result")),
+                                    
                                     tabPanel("Uji Lanjut",
                                              selectInput(inputId = "sel.lanjutrbsl",
                                                          label = "Pilih Variabel Signifikan",
@@ -94,15 +95,19 @@ ui <- dashboardPage(skin = "blue",
                                                          selected = NULL),
                                              conditionalPanel(condition = "input.ujilanjutrbsl == 'Ujilsdrbsl'",
                                                               box(title = "Uji LSD",
-                                                                  collapsible = TRUE, width=12,verbatimTextOutput(outputId = "ujilanjut_rbsllsd"))),
+                                                                  collapsible = TRUE, width=12,
+                                                                  verbatimTextOutput(outputId = "ujilanjut_rbsllsd"),
+                                                                  plotOutput(outputId = "plotlsdrbsl"))),
                                              conditionalPanel(condition = "input.ujilanjutrbsl == 'Ujitukeyrbsl'",
                                                               box(title = "Uji Tukey",
                                                                   collapsible = TRUE,width=12,
-                                                                  verbatimTextOutput(outputId = "ujilanjut_rbsltukey"))),
+                                                                  verbatimTextOutput(outputId = "ujilanjut_rbsltukey"),
+                                                                  plotOutput(outputId = "plottukeyrbsl"))),
                                              conditionalPanel(condition = "input.ujilanjutrbsl == 'Ujiduncanrbsl'",
                                                               box(title = "Uji Duncan",
                                                                   collapsible = TRUE,width=12,
-                                                                  verbatimTextOutput(outputId = "ujilanjut_rbslduncan")))),
+                                                                  verbatimTextOutput(outputId = "ujilanjut_rbslduncan"),
+                                                                  plotOutput(outputId = "plotduncanrbsl")))),
                                     tabPanel("Uji Asumsi",
                                              box(title = "Uji Kesamaan Ragam Sisaan",
                                                  collapsible = TRUE, width=12,
@@ -122,7 +127,7 @@ ui <- dashboardPage(skin = "blue",
                     )
 )
 server <- function(input, output, session){
-  inData <- reactive({file <- input$file
+  inDatarbsl <- reactive({file <- input$file
   ext <- tools::file_ext(file$datapath)
   req(file)
   
@@ -147,59 +152,59 @@ server <- function(input, output, session){
   })
   
   
-  output$tabel_rbsl <- renderDataTable(inData(), options = list(pageLength = 10))
+  output$tabel_rbsl <- renderDataTable(inDatarbsl(), options = list(pageLength = 10))
   
   
   observe(
     updateSelectInput(session = session, inputId = "var1", 
-                      label = "Pilih Variabel Respon", choices = colnames(inData()))
+                      label = "Pilih Variabel Respon", choices = colnames(inDatarbsl()))
   )
   
   observeEvent(input$var1,{
     updateSelectInput(session = session, inputId = "var2",label = "Pilih Variabel Perlakuan",
-                      choices = colnames(inData())[!(colnames(inData()) %in% input$var1)])})
+                      choices = colnames(inDatarbsl())[!(colnames(inDatarbsl()) %in% input$var1)])})
   
   observeEvent(input$var2,{
     updateSelectInput(session = session, inputId = "var3",label = "Pilih Variabel Baris",
-                      choices = colnames(inData())[!(colnames(inData()) %in% input$var2 )])})
+                      choices = colnames(inDatarbsl())[!(colnames(inDatarbsl()) %in% input$var2 )])})
   
   observeEvent(input$var3,{
     updateSelectInput(session = session, inputId = "var4",label = "Pilih Variabel Kolom",
-                      choices = colnames(inData())[!(colnames(inData()) %in% input$var3)])})
+                      choices = colnames(inDatarbsl())[!(colnames(inDatarbsl()) %in% input$var3)])})
   
   summaryresponrbsl <- reactive({
-    Respon <- as.numeric(inData()[[input$var1]])
+    Respon <- as.numeric(inDatarbsl()[[input$var1]])
     summary(Respon)
   })
   
   output$summary_responrbsl <- renderPrint(summaryresponrbsl())
   
   summaryperlakuanrbsl <- reactive({
-    Perlakuan <- as.factor(inData()[[input$var2]])
+    Perlakuan <- as.factor(inDatarbsl()[[input$var2]])
     summary(Perlakuan)
   })
   
   output$summary_perlakuanrbsl <- renderPrint(summaryperlakuanrbsl())
   
   summarybarisrbsl <- reactive({
-    Baris <- as.factor(inData()[[input$var3]])
+    Baris <- as.factor(inDatarbsl()[[input$var3]])
     summary(Baris)
   })
   
   output$summary_barisrbsl <- renderPrint(summarybarisrbsl())
   
   summarykolomrbsl <- reactive({
-    Kolom <- as.factor(inData()[[input$var3]])
+    Kolom <- as.factor(inDatarbsl()[[input$var3]])
     summary(Kolom)
   })
   
   output$summary_kolomrbsl <- renderPrint(summarykolomrbsl())
   
   datarbsl <- reactive({
-    Respon <- as.numeric(inData()[[input$var1]])
-    Perlakuan <- as.factor(inData()[[input$var2]])
-    Baris <- as.factor(inData()[[input$var3]])
-    Kolom <- as.factor(inData()[[input$var4]])
+    Respon <- as.numeric(inDatarbsl()[[input$var1]])
+    Perlakuan <- as.factor(inDatarbsl()[[input$var2]])
+    Baris <- as.factor(inDatarbsl()[[input$var3]])
+    Kolom <- as.factor(inDatarbsl()[[input$var4]])
     data.rbsl <- data.frame(Respon, Perlakuan, Baris, Kolom)
     return(data.rbsl)
   })
@@ -210,15 +215,11 @@ server <- function(input, output, session){
   })
   
   anovarbsl <- reactive({
-    if(is.null(input$var1)){
+    if(is.null(input$var2)){
       return(NULL)
     }
     else{
-      Respon <- as.numeric(inData()[[input$var1]])
-      Perlakuan <- as.factor(inData()[[input$var2]])
-      Baris <- as.factor(inData()[[input$var3]])
-      Kolom <- as.factor(inData()[[input$var4]])
-      return(aov(as.formula(Respon ~ Perlakuan + Baris + Kolom)))
+      return(aov(Respon ~ Perlakuan + Baris + Kolom,datarbsl()))
     }
   })
   
@@ -234,6 +235,14 @@ server <- function(input, output, session){
       lsdrbsl1 <- LSD.test(anovarbsl(),"Perlakuan", p.adj="none")
       return(lsdrbsl1)
     }
+    else if(input$sel.lanjutrbsl == "Baris"){
+      lsdrbsl2 <- LSD.test(anovarbsl(),"Baris", p.adj="none")
+      return(lsdrbsl2)
+    }
+    else if(input$sel.lanjutrbsl == "Kolom"){
+      lsdrbsl3 <- LSD.test(anovarbsl(),"Kolom", p.adj="none")
+      return(lsdrbsl3)
+    }
   })
   
   output$ujilanjut_rbsllsd <- renderPrint({
@@ -241,6 +250,29 @@ server <- function(input, output, session){
     isolate(lsdrbsl())
   })
   
+  lsdrbslplot <- reactive({
+    req(anovarbsl())
+    if(input$sel.lanjutrbsl == "Tidak Ada"){
+      return("Tidak Ada Variabel yang Signifikan")
+    }
+    else if(input$sel.lanjutrbsl == "Perlakuan"){
+      lsdrbsl1 <- LSD.test(anovarbsl(),"Perlakuan", p.adj="none")
+      return(plot(lsdrbsl1))
+    }
+    else if(input$sel.lanjutrbsl == "Baris"){
+      lsdrbsl2 <- LSD.test(anovarbsl(),"Baris", p.adj="none")
+      return(plot(lsdrbsl2))
+    }
+    else if(input$sel.lanjutrbsl == "Kolom"){
+      lsdrbsl3 <- LSD.test(anovarbsl(),"Kolom", p.adj="none")
+      return(plot(lsdrbsl3))
+    }
+  })
+  
+  output$plotlsdrbsl <- renderPlot({
+    input$kliklanjutrbsl
+    isolate(lsdrbslplot())
+  })
   
   tukeyrbsl <- reactive({
     req(anovarbsl())
@@ -251,11 +283,43 @@ server <- function(input, output, session){
       tukeyrbsl1 <- TukeyHSD(anovarbsl(),"Perlakuan")
       return(tukeyrbsl1)
     }
+    else if(input$sel.lanjutrbsl == "Baris"){
+      tukeyrbsl2 <- TukeyHSD(anovarbsl(),"Baris")
+      return(tukeyrbsl2)
+    }
+    else if(input$sel.lanjutrbsl == "Kolom"){
+      tukeyrbsl3 <- TukeyHSD(anovarbsl(),"Kolom")
+      return(tukeyrbsl3)
+    }
   })
   
   output$ujilanjut_rbsltukey <- renderPrint({
     input$kliklanjutrbsl
     isolate(tukeyrbsl())
+  })
+  
+  tukeyrbslplot <- reactive({
+    req(anovarbsl())
+    if(input$sel.lanjutrbsl == "Tidak Ada"){
+      return("Tidak Ada Variabel yang Signifikan")
+    }
+    else if(input$sel.lanjutrbsl == "Perlakuan"){
+      tukeyrbsl1 <- TukeyHSD(anovarbsl(),"Perlakuan")
+      return(plot(tukeyrbsl1))
+    }
+    else if(input$sel.lanjutrbsl == "Baris"){
+      tukeyrbsl2 <- TukeyHSD(anovarbsl(),"Baris")
+      return(plot(tukeyrbsl2))
+    }
+    else if(input$sel.lanjutrbsl == "Kolom"){
+      tukeyrbsl3 <- TukeyHSD(anovarbsl(),"Kolom")
+      return(plot(tukeyrbsl3))
+    }
+  })
+  
+  output$plottukeyrbsl <- renderPlot({
+    input$kliklanjutrbsl
+    isolate(tukeyrbslplot())
   })
   
   duncanrbsl <- reactive({
@@ -267,11 +331,43 @@ server <- function(input, output, session){
       duncanrbsl1 <- duncan.test(anovarbsl(),"Perlakuan",group = T, console = T)
       return(duncanrbsl1)
     }
+    else if(input$sel.lanjutrbsl == "Baris"){
+      duncanrbsl2 <- duncan.test(anovarbsl(),"Baris",group = T, console = T)
+      return(duncanrbsl2)
+    }
+    else if(input$sel.lanjutrbsl == "Kolom"){
+      duncanrbsl3 <- duncan.test(anovarbsl(),"Kolom",group = T, console = T)
+      return(duncanrbsl3)
+    }
   })
   
   output$ujilanjut_rbslduncan <- renderPrint({
     input$kliklanjutrbsl
     isolate(duncanrbsl())
+  })
+  
+  duncanrbslplot <- reactive({
+    req(anovarbsl())
+    if(input$sel.lanjutrbsl == "Tidak Ada"){
+      return("Tidak Ada Variabel yang Signifikan")
+    }
+    else if(input$sel.lanjutrbsl == "Perlakuan"){
+      duncanrbsl1 <- duncan.test(anovarbsl(),"Perlakuan",group = T, console = T)
+      return(plot(duncanrbsl1))
+    }
+    else if(input$sel.lanjutrbsl == "Baris"){
+      duncanrbsl2 <- duncan.test(anovarbsl(),"Baris",group = T, console = T)
+      return(plot(duncanrbsl2))
+    }
+    else if(input$sel.lanjutrbsl == "Kolom"){
+      duncanrbsl3 <- duncan.test(anovarbsl(),"Kolom",group = T, console = T)
+      return(plot(duncanrbsl3))
+    }
+  })
+  
+  output$plotduncanrbsl <- renderPlot({
+    input$kliklanjutrbsl
+    isolate(duncanrbslplot())
   })
   
   heterorbsl <- reactive({

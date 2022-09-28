@@ -70,24 +70,35 @@ ui <- dashboardPage(skin = "blue",
                                     tabPanel("Anova",
                                              verbatimTextOutput(outputId = "anova_rakl")),
                                     tabPanel("Uji Lanjut",
-                                             box(title = "Uji LSD",
-                                                 collapsible = TRUE, width=12,
-                                                 verbatimTextOutput(outputId = "ujilanjut_rakllsd")),
-                                             box(title = "Plot Uji LSD",
-                                                 height = "480px", collapsible = TRUE, width = 12,
-                                                 plotOutput(outputId = "ujilanjut_lsd_plot")),
-                                             box(title = "Uji Tukey",
-                                                 collapsible = TRUE,width=12,
-                                                 verbatimTextOutput(outputId = "ujilanjut_rakltukey")),
-                                             box(title = "Plot Uji Tukey",
-                                                 height = "480px", collapsible=TRUE, width = 12,
-                                                 plotOutput(outputId = "ujilanjut_rakltukey_plot")),
-                                             box(title = "Uji Duncan",
-                                                 collapsible = TRUE,width=12,
-                                                 verbatimTextOutput(outputId = "ujilanjut_raklduncan")),
-                                             box(title = "Plot Uji Duncan",
-                                                 height = "480px", collapsible = TRUE, width = 12,
-                                                 plotOutput(outputId = "ujilanjut_duncan_plot"))),
+                                             selectInput(inputId = "sel.lanjutrakl",
+                                                         label = "Pilih Variabel Signifikan",
+                                                         choices = c("Tidak Ada" = "Tidak Ada",
+                                                                     "Perlakuan" = "Perlakuan",
+                                                                     "Kelompok" = "Kelompok",
+                                                                     "Perlakuan dan Kelompok" = "Perlakuan dan Kelompok"),
+                                                         selected = NULL),
+                                             actionButton("kliklanjutrakl","Pilih"),
+                                             selectInput(inputId = "ujilanjutrakl",
+                                                         label = "Pilih Uji Lanjut",
+                                                         choices = c("Uji LSD" = "Ujilsdrakl",
+                                                                     "Uji Tukey" = "Ujitukeyrakl",
+                                                                     "Uji Duncan" = "Ujiduncanrakl"),
+                                                         selected = NULL),
+                                             conditionalPanel(condition = "input.ujilanjutrakl == 'Ujilsdrakl'",
+                                                              box(title = "Uji LSD",
+                                                                  collapsible = TRUE, width = 12, 
+                                                                  verbatimTextOutput(outputId = "ujilanjut_rakllsd"),
+                                                                  plotOutput(outputId = "ujilanjut_lsd_plot")))),
+                                             conditionalPanel(condition = "input.ujilanjutrakl == 'Ujitukeyrakl'",
+                                                              box(title = "Uji Tukey",
+                                                                  collapsible = TRUE, width = 12,
+                                                                  verbatimTextOutput(outputId = "ujilanjut_rakltukey"),
+                                                                  plotOutput(outputId = "ujilanjut_rakltukey_plot"))),
+                                             conditionalPanel(condition = "input.ujilanjutrakl == 'Ujiduncanrakl'",
+                                                              box(title = "Uji Duncan",
+                                                                  collapsible = TRUE, width = 12, 
+                                                                  verbatimTextOutput(outputId = "ujilanjut_raklduncan"),
+                                                                  plotOutput(outputId = "ujilanjut_raklduncan_plot"))),
                                     tabPanel("Uji Asumsi",
                                              box(title = "Uji Kesamaan Ragam Sisaan",
                                                  collapsible = TRUE, width = 12,
@@ -183,68 +194,157 @@ server <- function(input, output, session){
     }
   })
   
-  
   output$anova_rakl <- renderPrint(summary(anovarakl()))
   
   lsdrakl <- reactive({
     Respon <- as.numeric(inData()[[input$varr1]])
     Perlakuan <- as.factor(inData()[[input$varr2]])
     Kelompok <- as.factor(inData()[[input$varr3]])
-    lsdrakl1 <- LSD.test(anovarakl(),"Perlakuan", p.adj="none")
-    return(lsdrakl1)
+    if(input$sel.lanjutrakl == "Tidak Ada"){
+      return("Tidak Ada Variabel yang Signifikan, Tidak Dapat Melanjutkan Uji Lanjut")
+    }
+    else if(input$sel.lanjutrakl == "Perlakuan"){
+      lsdrakl1 <- LSD.test(anovarakl(),"Perlakuan", p.adj="none")
+      return(lsdrakl1)
+    }
+    else if(input$sel.lanjutrakl == "Kelompok"){
+      lsdrakl2 <- LSD.test(anovarakl(),"Kelompok", p.adj="none")
+      return(lsdrakl2)
+    }
+    else if(input$sel.lanjutrakl == "Perlakuan dan Kelompok"){
+      lsdrakl3 <- LSD.test(anovarakl())
+    }
   })
   
-  lsdrakl2 <- reactive({
+  lsdrakl4 <- reactive({
     Respon <- as.numeric(inData()[[input$varr1]])
     Perlakuan <- as.factor(inData()[[input$varr2]])
     Kelompok <- as.factor(inData()[[input$varr3]])
-    lsdrakl1 <- LSD.test(anovarakl(),"Perlakuan", p.adj="none")
-    plot(lsdrakl1)
+    if(input$sel.lanjutrakl == "Tidak Ada"){
+      return("Tidak Ada Variabel yang Signifikan, Tidak Dapat Melanjutkan Uji Lanjut")
+    }
+    else if(input$sel.lanjutrakl == "Perlakuan"){
+      lsdrakl1 <- LSD.test(anovarakl(),"Perlakuan", p.adj="none")
+      (plot(lsdrakl1))
+    }
+    else if(input$sel.lanjutrakl == "Kelompok"){
+      lsdrakl2 <- LSD.test(anovarakl(),"Kelompok", p.adj="none")
+      plot(lsdrakl2)
+    }
+    else if(input$sel.lanjutrakl == "Perlakuan dan Kelompok"){
+      lsdrakl3 <- LSD.test(anovarakl())
+      plot(lsdrakl3)
+    }
   })
   
-  output$ujilanjut_rakllsd <- renderPrint(lsdrakl())
-  
-  output$ujilanjut_lsd_plot <-  renderPlot((lsdrakl2()))
+  output$ujilanjut_rakllsd <- renderPrint({
+    input$kliklanjutrakl
+    isolate(lsdrakl())
+  })
+  output$ujilanjut_lsd_plot <- renderPlot({
+    input$kliklanjutrakl
+    isolate(lsdrakl4())
+  })
   
   tukeyrakl <- reactive({
     Respon <- as.numeric(inData()[[input$varr1]])
     Perlakuan <- as.factor(inData()[[input$varr2]])
     Kelompok <- as.factor(inData()[[input$varr3]])
-    tukeyrakl1 <- TukeyHSD(anovarakl(),"Perlakuan")
-    return(tukeyrakl1)
-  })
+    if(input$sel.lanjutrakl == "Tidak Ada"){
+      return("Tidak Ada Variabel yang Signifikan")
+    }
+    else if(input$sel.lanjutrakl == "Perlakuan"){
+      tukeyrakl1 <- TukeyHSD(anovarakl(),"Perlakuan")
+      return(tukeyrakl1)
+    }
+    else if(input$sel.lanjutrakl == "Kelompok"){
+      tukeyrakl2 <- TukeyHSD(anovarakl(),"Kelompok")
+      return(tukeyrakl2)
+    }
+    else if(input$sel.lanjutrakl == "Perlakuan dan Kelompok"){
+      tukeyrakl3 <- TukeyHSD(anovarakl())
+      return(tukeyrakl3)
+  }})
   
-  tukeyrakl2 <- reactive({
+  tukeyrakl4 <- reactive({
     Respon <- as.numeric(inData()[[input$varr1]])
     Perlakuan <- as.factor(inData()[[input$varr2]])
     Kelompok <- as.factor(inData()[[input$varr3]])
-    tukeyrakl1 <- TukeyHSD(anovarakl(),"Perlakuan")
-    plot(tukeyrakl1)
+    if(input$sel.lanjutrakl == "Tidak Ada"){
+      return("Tidak Ada Variabel yang Signifikan")
+    }
+    else if(input$sel.lanjutrakl == "Perlakuan"){
+      tukeyrakl1 <- TukeyHSD(anovarakl(),"Perlakuan")
+      plot(tukeyrakl1)
+    }
+    else if(input$sel.lanjutrakl == "Kelompok"){
+      tukeyrakl2 <- TukeyHSD(anovarakl(),"Kelompok")
+      plot(tukeyrakl2)
+    }
+    else if(input$sel.lanjutrakl == "Perlakuan dan Kelompok"){
+      tukeyrakl3 <- TukeyHSD(anovarakl())
+      plot(tukeyrakl3)
+  }})
+  
+  output$ujilanjut_rakltukey <- renderPrint({
+    input$kliklanjutrakl
+    isolate(tukeyrakl())
   })
   
-  output$ujilanjut_rakltukey <- renderPrint(tukeyrakl())
-  
-  output$ujilanjut_rakltukey_plot <-  renderPlot((tukeyrakl2()))
+  output$ujilanjut_rakltukey_plot <-  renderPlot({
+    input$kliklanjutrakl
+    isolate(tukeyrakl4())
+  })
   
   duncanrakl <-reactive({
     Respon <- as.numeric(inData()[[input$varr1]])
     Perlakuan <- as.factor(inData()[[input$varr2]])
     Kelompok <- as.factor(inData()[[input$varr3]])
-    duncanrakl1 <- duncan.test(anovarakl(), "Perlakuan")
-    return(duncanrakl1)
-  })
+    if(input$sel.lanjutrakl == "Tidak Ada"){
+      return("Tidak Ada Variabel yang Signifikan")
+    }
+    else if(input$sel.lanjutrakl == "Perlakuan"){
+      duncanrakl1 <- duncan.test(anovarakl(),"Perlakuan")
+      return(duncanrakl1)
+    }
+    else if(input$sel.lanjutrakl == "Kelompok"){
+      duncanrakl2 <- duncan.test(anovarakl(),"Kelompok")
+      return(duncanrakl2)
+    }
+    else if(input$sel.lanjutrakl == "Perlakuan dan Kelompok"){
+      duncanrakl3 <- duncan.test(anovarakl())
+      return(duncanrakl3)
+  }})
   
-  duncanrakl2 <-reactive({
+  duncanrakl4 <-reactive({
     Respon <- as.numeric(inData()[[input$varr1]])
     Perlakuan <- as.factor(inData()[[input$varr2]])
     Kelompok <- as.factor(inData()[[input$varr3]])
-    duncanrakl1 <- duncan.test(anovarakl(), "Perlakuan")
-    plot(duncanrakl1)
+    if(input$sel.lanjutrakl == "Tidak Ada"){
+      return("Tidak Ada Variabel yang Signifikan")
+    }
+    else if(input$sel.lanjutrakl == "Perlakuan"){
+      duncanrakl1 <- duncan.test(anovarakl(),"Perlakuan")
+      plot(duncanrakl1)
+    }
+    else if(input$sel.lanjutrakl == "Kelompok"){
+      duncanrakl2 <- duncan.test(anovarakl(),"Kelompok")
+      plot(duncanrakl2)
+    }
+    else if(input$sel.lanjutrakl == "Perlakuan dan Kelompok"){
+      duncanrakl3 <- duncan.test(anovarakl())
+      plot(duncanrakl3)
+  }})
+  
+  output$ujilanjut_raklduncan <- renderPrint({
+    input$kliklanjutrakl
+    isolate(duncanrakl())
   })
   
-  output$ujilanjut_raklduncan <- renderPrint(duncanrakl())
-  
-  output$ujilanjut_duncan_plot <-  renderPlot((duncanrakl2()))
+  output$ujilanjut_raklduncan_plot <- renderPlot({
+    input$kliklanjutrakl
+    isolate(duncanrakl4())
+  })
   
   heterorakl <- reactive({
     heterorakl1 <- bptest(anovarakl())

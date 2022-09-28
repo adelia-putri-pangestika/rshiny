@@ -45,6 +45,18 @@ ui <- dashboardPage(skin = "blue",
                                       selectInput(inputId = "varr3",
                                                   label = "Pilih Kelompok",
                                                   choices = NULL)),
+                                  box(title = "Apakah terdapat minimal perlakuan atau kelompok yang signifikan terhadap p-value?",
+                                      status = "primary",
+                                      solidHeader = T,
+                                      selectInput(inputId = "butuh_ujilanjut",
+                                                  label = "Pilih...",
+                                                  choices = c("Ya","Tidak"))),
+                                  box(title = "Manakah yang signifikan terhadap p-value?",
+                                      status = "primary",
+                                      solidHeader = T,
+                                      selectInput(inputId = "peubah_ujilanjut",
+                                                  label = "Pilih...",
+                                                  choices = c("Perlakuan","Kelompok"))),
                                 ),
                                 fluidPage(
                                   tabBox(
@@ -185,16 +197,14 @@ server <- function(input, output, session){
   output$summary_kelompok <- renderPrint(summarykelompok())
   
   anovarakl <- reactive({
-    if(is.null(input$varr2)){
+    if(is.null(input$varr1)){
       return(NULL)
     }
-    
-    if(is.null(input$varr3)){
-      return(NULL)
-    }
-    
     else{
-      return(aov(as.formula(paste(input$varr1," ~ ",paste(input$varr2, "+", input$varr3, collapse="+"))),data=inData()))
+      Respon <- as.numeric(inData()[[input$varr1]])
+      Perlakuan <- as.factor(inData()[[input$varr2]])
+      Kelompok <- as.factor(inData()[[input$varr3]])
+      return(aov(as.formula(Respon ~ Perlakuan + Kelompok)))
     }
   })
   
@@ -202,19 +212,28 @@ server <- function(input, output, session){
   output$anova_rakl <- renderPrint(summary(anovarakl()))
   
   lsdrakl <- reactive({
-    lsdrakl1 <- LSD.test(anovarakl(),paste(input$varr2), p.adj="none")
+    Respon <- as.numeric(inData()[[input$varr1]])
+    Perlakuan <- as.factor(inData()[[input$varr2]])
+    Kelompok <- as.factor(inData()[[input$varr3]])
+    lsdrakl1 <- LSD.test(anovarakl(),"Perlakuan", p.adj="none")
     return(lsdrakl1)
   })
   
   output$ujilanjut_rakllsd <- renderPrint(lsdrakl())
   
   tukeyrakl <- reactive({
-    tukeyrakl1 <- TukeyHSD(anovarakl(),paste(input$varr2))
+    Respon <- as.numeric(inData()[[input$varr1]])
+    Perlakuan <- as.factor(inData()[[input$varr2]])
+    Kelompok <- as.factor(inData()[[input$varr3]])
+    tukeyrakl1 <- TukeyHSD(anovarakl(),"Perlakuan")
     return(tukeyrakl1)
   })
   
   tukeyrakl2 <- reactive({
-    tukeyrakl1 <- TukeyHSD(anovarakl(),paste(input$varr2))
+    Respon <- as.numeric(inData()[[input$varr1]])
+    Perlakuan <- as.factor(inData()[[input$varr2]])
+    Kelompok <- as.factor(inData()[[input$varr3]])
+    tukeyrakl1 <- TukeyHSD(anovarakl(),"Perlakuan")
     plot(tukeyrakl1)
   })
   
@@ -223,7 +242,10 @@ server <- function(input, output, session){
   output$ujilanjut_rakltukey_plot <-  renderPlot((tukeyrakl2()))
   
   duncanrakl <-reactive({
-    duncanrakl1 <- duncan.test(anovarakl(), paste(input$varr2))
+    Respon <- as.numeric(inData()[[input$varr1]])
+    Perlakuan <- as.factor(inData()[[input$varr2]])
+    Kelompok <- as.factor(inData()[[input$varr3]])
+    duncanrakl1 <- duncan.test(anovarakl(), "Perlakuan")
     return(duncanrakl1)
   })
   

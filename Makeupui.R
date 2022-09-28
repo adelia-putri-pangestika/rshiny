@@ -58,32 +58,19 @@ ui <- dashboardPage(skin = "blue",
                                     tabPanel("Anova",
                                              verbatimTextOutput(outputId = "anova_ral")),
                                     tabPanel("Uji Lanjut",
+                                             selectInput(inputId = "sel.lanjutral",
+                                                         label = "Pilih Variabel Signifikan",
+                                                         choices = c("Tidak Ada" = "Tidak Ada",
+                                                                     "Perlakuan" = "Perlakuan"),
+                                                         selected = NULL),
+                                             actionButton("kliklanjutral","Pilih"),
                                              box(title = "Uji LSD",
-                                                 collapsible = TRUE, width=12,
-                                                 selectInput(inputId = "sel.lsdral",
-                                                             label = "Pilih Variabel Signifikan",
-                                                             choices = c("Tidak Ada" = "Tidak Ada",
-                                                                         "Perlakuan" = "Perlakuan"),
-                                                             selected = NULL),
-                                                 actionButton("kliklsdral","Pilih"),
-                                                 verbatimTextOutput(outputId = "ujilanjut_rallsd")),
+                                                 collapsible = TRUE, width=12,verbatimTextOutput(outputId = "ujilanjut_rallsd")),
                                              box(title = "Uji Tukey",
                                                  collapsible = TRUE,width=12,
-                                                 selectInput(inputId = "sel.tukeyral",
-                                                             label = "Pilih Variabel Signifikan",
-                                                             choices = c("Tidak Ada" = "Tidak Ada",
-                                                                         "Perlakuan" = "Perlakuan"),
-                                                             selected = "Tidak Ada"),
-                                                 actionButton("kliktukeyral","Pilih"),
                                                  verbatimTextOutput(outputId = "ujilanjut_raltukey")),
                                              box(title = "Uji Duncan",
                                                  collapsible = TRUE,width=12,
-                                                 selectInput(inputId = "sel.duncanral",
-                                                             label = "Pilih Variabel Signifikan",
-                                                             choices = c("Tidak Ada" = "Tidak Ada",
-                                                                         "Perlakuan" = "Perlakuan"),
-                                                             selected = "Tidak Ada"),
-                                                 actionButton("klikduncanral","Pilih"),
                                                  verbatimTextOutput(outputId = "ujilanjut_ralduncan"))),
                                     tabPanel("Uji Asumsi",
                                              box(title = "Uji Kesamaan Ragam Sisaan",
@@ -168,49 +155,49 @@ server <- function(input, output, session){
   
   lsdral <- reactive({
     req(anovaral())
-    if(input$sel.lsdral == "Tidak Ada"){
+    if(input$sel.lanjutral == "Tidak Ada"){
       return("Tidak Ada Variabel yang Signifikan")
     }
-    else if(input$sel.lsdral == "Perlakuan"){
+    else if(input$sel.lanjutral == "Perlakuan"){
       lsdral1 <- LSD.test(anovaral(),"x", p.adj="none")
       return(lsdral1)
     }
   })
   
   output$ujilanjut_rallsd <- renderPrint({
-    input$kliklsdral
+    input$kliklanjutral
     isolate(lsdral())
   })
   
   tukeyral <- reactive({
     req(anovaral())
-    if(input$sel.tukeyral == "Tidak Ada"){
+    if(input$sel.lanjutral == "Tidak Ada"){
       return("Tidak Ada Variabel yang Signifikan")
     }
-    else if(input$sel.tukeyral == "Perlakuan"){
+    else if(input$sel.lanjutral == "Perlakuan"){
       tukeyral1 <- TukeyHSD(anovaral(),"x")
       return(tukeyral1)
     }
   })
   
   output$ujilanjut_raltukey <- renderPrint({
-    input$kliktukeyral
+    input$kliklanjutral
     isolate(tukeyral())
   })
   
   duncanral <- reactive({
     req(anovaral())
-    if(input$sel.duncanral == "Tidak Ada"){
+    if(input$sel.lanjutral == "Tidak Ada"){
       return("Tidak Ada Variabel yang Signifikan")
     }
-    else if(input$sel.duncanral == "Perlakuan"){
+    else if(input$sel.lanjutral == "Perlakuan"){
       duncanral1 <- duncan.test(anovaral(),"x",group = T, console = T)
       return(duncanral1)
     }
   })
   
   output$ujilanjut_ralduncan <- renderPrint({
-    input$klikduncanral
+    input$kliklanjutral
     isolate(duncanral())
   })
   

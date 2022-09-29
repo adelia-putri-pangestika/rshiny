@@ -112,32 +112,34 @@ ui <- dashboardPage(skin = "blue",
                                              box(title = "Uji Kesamaan Ragam Sisaan",
                                                  collapsible = TRUE, width=12,
                                                  selectInput(inputId = "sel.heterorbsl",
-                                                             label = "Pilih Jenis Uji",
-                                                             choices = c("Breusch-Pagan" = "Breusch-Pagan",
-                                                                         "Glejser" = "Glejser"),
-                                                             selected = "Breusch-Pagan"),
+                                                             label = "Pilih Jenis Uji Kehomogenan Ragam Sisaan",
+                                                             choices = c("Breusch-Pagan Test" = "bptestrbsl",
+                                                                         "Non-constant Variance Score Test" = "nonconstantrbsl"),
+                                                             selected = "NULL"),
+                                                 actionButton("klikheterorbsl","Pilih"),
                                                  verbatimTextOutput(outputId = "homoskedastis_rbsl"),
                                                  verbatimTextOutput(outputId = "homoskedastis_rbsl.result")),
                                              box(title = "Uji Kebebasan Sisaan",
                                                  collapsible = TRUE, width=12,
                                                  selectInput(inputId = "sel.autorbsl",
-                                                             label = "Pilih Jenis Uji",
-                                                             choices = c("Durbin-Watson" = "Durbin-Watson",
-                                                                         "Breusch-Godfrey" = "Breusch-Godfrey"),
-                                                             selected = "Durbin-Watson"),
+                                                             label = "Pilih Jenis Uji Kebebasan Sisaan",
+                                                             choices = c("Durbin-Watson Test" = "dwtestrbsl",
+                                                                         "Runs Test" = "runtestrbsl"),
+                                                             selected = "NULL"),
+                                                 actionButton("klikautokorrbsl","Pilih"),
                                                  verbatimTextOutput(outputId = "autokor_rbsl"),
                                                  verbatimTextOutput(outputId = "autokor_rbsl.result")),
                                              box(title = "Uji Kenormalan Sisaan",
                                                  collapsible = TRUE, width=12,
                                                  selectInput(inputId = "sel.normrbsl",
-                                                             label = "Pilih Jenis Uji",
-                                                             choices = c("Shapiro-Wilk"="Shapiro-Wilk",
-                                                                         "Kolmogorov-Smirnov"= "Kolmogorov-Smirnov",
-                                                                         "Anderson-Darling" = "Anderson-Darling"
+                                                             label = "Pilih Jenis Uji Kenormalan Sisaan",
+                                                             choices = c("Kolmogorov-Smirnov Test"= "kstestrbsl",
+                                                                         "Shapiro-Wilk Test"="shapirorbsl"
                                                              ),
                                                              selected = "Shapiro-Wilk"),
+                                                 actionButton("kliknormalrbsl","Pilih"),
                                                  verbatimTextOutput(outputId = "normalitas_rbsl"),
-                                                 verbatimTextOutput(outputId = "normalitas_rbsl.result"))),
+                                                 verbatimTextOutput(outputId = "normalitas_rbsl.result")))
                                   )
                                 )
                                 
@@ -390,89 +392,108 @@ server <- function(input, output, session){
   })
   
   heterorbsl <- reactive({
-    req(input$sel.heterorbsl)
-    if(input$sel.heterorbsl == "Breusch-Pagan"){
+    if(input$sel.heterorbsl == "bptestrbsl"){
       heterorbsl1 <- bptest(modelrbsl())
       return(heterorbsl1)
     }
-    else if(input$sel.heterorbsl == "Glejser"){
-      return(skedastic::glejser(modelrbsl()))
+    else if(input$sel.heterorbsl == "nonconstantrbsl"){
+      heterorbsl2 <- ncvTest(modelrbsl())
+      return(heterorbsl2)
     }
   })
   
-  output$homoskedastis_rbsl <- renderPrint(heterorbsl())
+  output$homoskedastis_rbsl <- renderPrint({
+    input$klikheterorbsl
+    isolate(heterorbsl())
+  })
   
   heterorbsl.result <- reactive({
     req(heterorbsl())
-    if(heterorbsl()$p.value > 0.05){
-      return("Sisaan tidak heterogen")
-    }
-    else{
-      return("Sisaan heterogen")
-    }
+    if(input$sel.heterorbsl == "bptestrbsl"){
+      if(heterorbsl()$p.value > 0.05){
+        return("Ragam sisaan homogen")
+      }
+      else{
+        return("Ragam sisaan tidak homogen")
+      }}
+    else if(input$sel.heterorbsl == "nonconstantrbsl"){
+      if(heterorbsl()$p > 0.05){
+        return("Ragam sisaan homogen")
+      }
+      else{
+        return("Ragam sisaan tidak homogen")
+      }}
   })
   
-  output$homoskedastis_rbsl.result <- renderPrint({
-    req(heterorbsl.result())
-    print(heterorbsl.result())
-  })
+  output$homoskedastis_rbsl.result <- renderPrint(({
+    input$klikheterorbsl
+    isolate(heterorbsl.result())
+  }))
   
   autokorrbsl <- reactive({
-    req(input$sel.autorbsl)
-    if(input$sel.autorbsl == "Durbin-Watson"){
-      return(lmtest::dwtest(modelrbsl()))  
-    }
-    else if(input$sel.autorbsl == "Breusch-Godfrey"){
-      return(lmtest::bgtest(modelrbsl()))
-    }
+    if(input$sel.autorbsl == "dwtestrbsl"){
+      autocorrbsl1 <- dwt(modelrbsl())
+      return(autocorrbsl1)}
+    else if(input$sel.autorbsl == "runtestrbsl"){
+      autocorrbsl2 <- runs.test(modelrbsl()$residuals)
+      return(autocorrbsl2)}
   })
   
-  output$autokor_rbsl <- renderPrint(autokorrbsl())
+  output$autokor_rbsl <- renderPrint({
+    input$klikautokorrbsl
+    isolate(autokorrbsl())
+  })
   
   autokorrbsl.result <- reactive({
     req(autokorrbsl())
-    if(autokorrbsl()$p.value > 0.05){
-      return("Tidak ada autokorelasi")
-    }
-    else{
-      return("Ada Autokorelasi")
-    }
+    if(input$sel.autorbsl == "dwtestrbsl"){
+      if(autokorrbsl()$p > 0.05){
+        return("Antar sisaan saling bebas")
+      }
+      else{
+        return("Antar sisaan tidak saling bebas")
+      }}
+    else if(input$sel.autorbsl == "runtestrbsl"){
+      if(autokorrbsl()$p.value > 0.05){
+        return("Antar sisaan saling bebas")
+      }
+      else{
+        return("Antar sisaan tidak saling bebas")
+      }}
   })
   
   output$autokor_rbsl.result <- renderPrint({
-    req(autokorrbsl.result())
-    print(autokorrbsl.result())
+    input$klikautokorrbsl
+    isolate(autokorrbsl.result())
   })
   
   normalrbsl <- reactive({
-    req(input$sel.normrbsl)
-    if(input$sel.normrbsl == "Shapiro-Wilk"){
+    if(input$sel.normrbsl == "kstestrbsl"){
+      normalrbsl1 <- ks.test(modelrbsl()$residuals, "pnorm", mean=mean(modelrbsl()$residuals),sd=sd(modelrbsl()$residuals))
+      return(normalrbsl1)}
+    else if(input$sel.normrbsl == "shapirorbsl"){
       normalrbsl1 <- shapiro.test(modelrbsl()$residuals)
-      return(normalrbsl1) 
-    }
-    else if(input$sel.normrbsl == "Kolmogorov-Smirnov"){
-      return(stats::ks.test(modelrbsl()$residuals, y = pnorm))
-    }
-    else if(input$sel.normrbsl == "Anderson-Darling"){
-      return(nortest::ad.test(modelrbsl()$residuals))
-    }
+      return(normalrbsl1)}
   })
   
-  output$normalitas_rbsl <- renderPrint(normalrbsl())
+  output$normalitas_rbsl <- renderPrint({
+    input$kliknormalrbsl
+    isolate(normalrbsl())
+  })
   
   normalrbsl.result <- reactive({
     req(normalrbsl())
     if(normalrbsl()$p.value > 0.05) {
-      return("Sisaan Menyebar normal")
+      return("Sisaan menyebar normal")
     }
     else{
-      return("Sisaan Tidak menyebar normal")
+      return("Sisaan tidak menyebar normal")
     }
   })
   
   output$normalitas_rbsl.result <- renderPrint({
-    req(normalrbsl.result())
-    print(normalrbsl.result())
+    input$kliknormalrbsl
+    isolate(normalrbsl.result())
   })
   
 }

@@ -88,13 +88,35 @@ ui <- dashboardPage(skin = "blue",
                                     tabPanel("Uji Asumsi",
                                              box(title = "Uji Kesamaan Ragam Sisaan",
                                                  collapsible = TRUE, width=12,
-                                                 verbatimTextOutput(outputId = "homoskedastis_ral")),
+                                                 selectInput(inputId = "Heteroskedastisral",
+                                                             label = "Pilih Jenis Uji Kehomogenan Ragam Sisaan",
+                                                             choices = c("Breush-Pagan Test" = "bptestral",
+                                                                         "Non-constant Variance Score Test" = "nonconstantral"),
+                                                             selected = NULL),
+                                                 actionButton("klikheteroral","Pilih"),
+                                                 verbatimTextOutput(outputId = "ujiheteroral"),
+                                                 verbatimTextOutput(outputId = "result.ujiheteroral")),
                                              box(title = "Uji Kebebasan Sisaan",
                                                  collapsible = TRUE, width=12,
-                                                 verbatimTextOutput(outputId = "autokor_ral")),
+                                                 selectInput(inputId = "tabautokorral",
+                                                             label = "Pilih Jenis Uji Kebebasan Sisaan",
+                                                             choices = c("Durbin-Watson Test" = "dwtestral",
+                                                                         "Runs Test" = "runtestral"),
+                                                             selected = NULL),
+                                                 actionButton("klikautokorral","Pilih"),
+                                                 verbatimTextOutput(outputId = "ujiautokorral"),
+                                                 verbatimTextOutput(outputId = "result.ujiautokorral")),
                                              box(title = "Uji Kenormalan Sisaan",
                                                  collapsible = TRUE, width=12,
-                                                 verbatimTextOutput(outputId = "normalitas_ral"))),
+                                                 selectInput(inputId = "normalitasral",
+                                                             label = "Pilih Jenis Uji Kenormalan Sisaan",
+                                                             choices = c("Kolmogorov-Smirnov Test" = "kstestral",
+                                                                         "Shapiro-Wilk Test" = "shapiroral"),
+                                                             selected = NULL),
+                                                 actionButton("kliknormalral","Pilih"),
+                                                 verbatimTextOutput(outputId = "ujinormalitasral"),
+                                                 verbatimTextOutput(outputId = "result.ujinormalitasral")))
+                                             ),
                                   )
                                 )
                                 
@@ -102,7 +124,8 @@ ui <- dashboardPage(skin = "blue",
                       )
                       
                     )
-)
+
+
 server <- function(input, output, session){
   inDataral <- reactive({file <- input$file
   ext <- tools::file_ext(file$datapath)
@@ -127,8 +150,6 @@ server <- function(input, output, session){
   }
   
   })
-  
-  
   
   output$tabel_ral <- renderDataTable(inDataral(), options = list(pageLength = 10))
   
@@ -263,25 +284,107 @@ server <- function(input, output, session){
   })
   
   heteroral <- reactive({
-    heteroral1 <- bptest(modelral())
-    return(heteroral1)
+    if (input$Heteroskedastisral == "bptestral"){
+      heteroral1 <- bptest(modelral())
+      return(heteroral1)}
+    else if (input$Heteroskedastisral == "nonconstantral"){
+      heteroral2 <- ncvTest(modelral())
+      return(heteroral2)
+    }
   })
   
-  output$homoskedastis_ral <- renderPrint(heteroral())
+  output$ujiheteroral <- renderPrint({
+    input$klikheteroral
+    isolate(heteroral())
+  })
+  
+  result_heteroral <- reactive({
+    req(heteroral())
+    if (input$Heteroskedastisral == "bptestral"){
+      if(heteroral()$p.value > 0.05){
+        return("Ragam sisaan homogen")
+      }
+      else if(heteroral()$p.value <= 0.05){
+        return("Ragam sisaan tidak homogen")
+      }}
+    else if (input$Heteroskedastisral == "nonconstantral"){
+      if(heteroral()$p > 0.05){
+        return("Ragam sisaan homogen")
+      }
+      else if(heteroral()$p <= 0.05){
+        return("Ragam sisaan tidak homogen")
+      }}
+  })
+  
+  output$result.ujiheteroral <- renderPrint(({
+    input$klikheteroral
+    isolate(result_heteroral())
+  }))
   
   autokorral <- reactive({
-    autocorral1 <- runs.test(modelral()$residuals)
-    return(autocorral1)
+    if (input$tabautokorral == "dwtestral"){
+      autocorral1 <- dwt(modelral())
+      return(autocorral1)}
+    else if (input$tabautokorral == "runtestral"){
+      autocorral2 <- runs.test(modelral()$residuals)
+      return(autocorral2)}
   })
   
-  output$autokor_ral <- renderPrint(autokorral())
+  output$ujiautokorral <- renderPrint({
+    input$klikautokorral
+    isolate(autokorral())
+  })
+  
+  result_autokorral <- reactive({
+    req(autokorral())
+    if (input$tabautokorral == "dwtestral"){
+      if(autokorral()$p > 0.05){
+        return("Antar sisaan saling bebas")
+      }
+      else{
+        return("Antar sisaan tidak saling bebas")
+      }}
+    else if (input$tabautokorral == "runtestral"){
+      if(autokorral()$p.value > 0.05){
+        return("Antar sisaan saling bebas")
+      }
+      else{
+        return("Antar sisaan tidak saling bebas")
+      }}
+  })
+  
+  output$result.ujiautokorral <- renderPrint({
+    input$klikautokorral
+    isolate(result_autokorral())
+  })
   
   normalral <- reactive({
-    normalral1 <- shapiro.test(modelral()$residuals)
-    return(normalral1)
+    if (input$normalitasral == "kstestral"){
+      normalral1 <- ks.test(modelral()$residuals, "pnorm", mean=mean(modelral()$residuals), sd=sd(modelral()$residuals))
+      return(normalral1)}
+    else if (input$normalitasral == "shapiroral"){
+      normalral2 <- shapiro.test(modelral()$residuals)
+      return(normalral2)}
+  })
+   
+  output$ujinormalitasral <- renderPrint({
+    input$kliknormalral
+    isolate(normalral())})
+  
+  result_normalitasral <- reactive({
+    req(normalral())
+    if(normalral()$p.value > 0.05){
+      return("Sisaan menyebar normal")
+    }
+    else{
+      return("Sisaan tidak menyebar normal")
+    }
   })
   
-  output$normalitas_ral <- renderPrint(normalral())
+  output$result.ujinormalitasral <- renderPrint({
+    input$kliknormalral
+    isolate(result_normalitasral())
+  })
   
 }
 

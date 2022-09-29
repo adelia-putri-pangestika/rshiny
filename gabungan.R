@@ -10,9 +10,9 @@ ui <- dashboardPage(skin = "blue",
                     dashboardHeader(title = "Experimental Design"),
                     dashboardSidebar(
                       sidebarMenu(
-                        menuItem("Rancangan Acak Lengkap", tabName = "RAL", icon = icon("th-large")),
-                        menuItem("Rancangan Acak Kelompok Lengkap", tabName = "RAKL", icon = icon("th-large")),
-                        menuItem("Rancangan Bujur Sangkar Latin", tabName = "RBSL", icon = icon("th-large"))
+                        menuItem("RAL", tabName = "RAL", icon = icon("th-large")),
+                        menuItem("RAKL", tabName = "RAKL", icon = icon("th-large")),
+                        menuItem("RBSL", tabName = "RBSL", icon = icon("th-large"))
                       )
                     ),
                     dashboardBody(
@@ -63,7 +63,8 @@ ui <- dashboardPage(skin = "blue",
                                                  collapsible = TRUE, width=12,
                                                  verbatimTextOutput(outputId = "summary_perlakuanral"))),
                                     tabPanel("Anova",
-                                             verbatimTextOutput(outputId = "anova_ral")),
+                                             verbatimTextOutput(outputId = "anova_ral"),
+                                             verbatimTextOutput(outputId = "resultanova_ral")),
                                     tabPanel("Uji Lanjut",
                                              selectInput(inputId = "sel.lanjutral",
                                                          label = "Pilih Variabel Signifikan",
@@ -180,7 +181,9 @@ ui <- dashboardPage(skin = "blue",
                                                  collapsible = TRUE, width = 12,
                                                  verbatimTextOutput(outputId = "summary_kelompok"))),
                                     tabPanel("Anova",
-                                             verbatimTextOutput(outputId = "anova_rakl")),
+                                             verbatimTextOutput(outputId = "anova_rakl"),
+                                             verbatimTextOutput(outputId = "anova_rakl.result1"),
+                                             verbatimTextOutput(outputId = "anova_rakl.result2")),
                                     tabPanel("Uji Lanjut",
                                              selectInput(inputId = "sel.lanjutrakl",
                                                          label = "Pilih Variabel Signifikan",
@@ -309,7 +312,9 @@ ui <- dashboardPage(skin = "blue",
                                     
                                     tabPanel("Anova",
                                              verbatimTextOutput(outputId = "anova_rbsl"),
-                                             verbatimTextOutput(outputId = "anova_rbsl.result")),
+                                             verbatimTextOutput(outputId = "anova_rbsl.result1"),
+                                             verbatimTextOutput(outputId = "anova_rbsl.result2"),
+                                             verbatimTextOutput(outputId = "anova_rbsl.result3")),
                                     
                                     tabPanel("Uji Lanjut",
                                              selectInput(inputId = "sel.lanjutrbsl",
@@ -455,7 +460,26 @@ server <- function(input, output, session){
     }
   })
   
+  anovaral2 <- reactive({
+    anovaral3 <- anova(modelral())
+    resultral <- data.frame(anovaral3$`Pr(>F)`)
+    anovafix <- resultral[1,]
+    return(anovafix)
+  })
+  
+  resultanovaral <- reactive({
+    req(anovaral2())
+    if (anovaral2() > 0.05){
+      return("Perlakuan Tidak Berpengaruh Signifikan Terhadap Respon")
+    }
+    else{
+      return("Perlakuan Berpengaruh Signifikan Terhadap Respon")
+    }
+  })
+  
   output$anova_ral <- renderPrint(summary(anovaral()))
+  
+  output$resultanova_ral <- renderPrint(resultanovaral())
   
   lsdral <- reactive({
     req(anovaral())
@@ -730,7 +754,58 @@ server <- function(input, output, session){
     }
   })
   
+  datarsetrakl <- reactive({
+    Respon <- as.numeric(inData()[[input$varr1]])
+    Perlakuan <- as.factor(inData()[[input$varr2]])
+    Kelompok <- as.factor(inData()[[input$varr3]])
+    data.rakl <- data.frame(Respon, Perlakuan, Kelompok)
+    return(data.rakl)
+  })
+  
+  modelrakl <- reactive({
+    modelrakl1 <- lm(Respon~Perlakuan+Kelompok, data = datarsetrakl())
+    return(modelrakl1)
+  })
+  
+  anovaraklres1 <- reactive({
+    anovarakl3 <- anova(modelrakl())
+    resultrakl <- data.frame(anovarakl3$`Pr(>F)`)
+    anovafixrakl <- resultrakl[1,]
+    return(anovafixrakl)
+  })
+  
+  resultanovarakl1 <- reactive({
+    req(anovaraklres1())
+    if (anovaraklres1() > 0.05){
+      return("Perlakuan Tidak Berpengaruh Signifikan Terhadap Respon")
+    }
+    else{
+      return("Perlakuan Berpengaruh Signifikan Terhadap Respon")
+    }
+  })
+  
+  anovaraklres2 <- reactive({
+    anovarakl4 <- anova(modelrakl())
+    resultrakl1 <- data.frame(anovarakl4$`Pr(>F)`)
+    anovafixrakl1 <- resultrakl1[2,]
+    return(anovafixrakl1)
+  })
+  
+  resultanovarakl2 <- reactive({
+    req(anovaraklres2())
+    if (anovaraklres2() > 0.05){
+      return("Kelompok Tidak Berpengaruh Signifikan Terhadap Respon")
+    }
+    else{
+      return("Kelompok Berpengaruh Signifikan Terhadap Respon")
+    }
+  })
+  
   output$anova_rakl <- renderPrint(summary(anovarakl()))
+  
+  output$anova_rakl.result1 <- renderPrint(resultanovarakl1())
+  
+  output$anova_rakl.result2 <- renderPrint(resultanovarakl2())
   
   lsdrakl <- reactive({
     Respon <- as.numeric(inData()[[input$varr1]])
@@ -1069,7 +1144,64 @@ server <- function(input, output, session){
     }
   })
   
+  anovarbslres1 <- reactive({
+    anovarbsl3 <- anova(modelrbsl())
+    resultrbsl <- data.frame(anovarbsl3$`Pr(>F)`)
+    anovafixrbsl <- resultrbsl[1,]
+    return(anovafixrbsl)
+  })
+  
+  resultanovarbsl1 <- reactive({
+    req(anovarbslres1())
+    if (anovarbslres1() > 0.05){
+      return("Perlakuan Tidak Berpengaruh Signifikan Terhadap Respon")
+    }
+    else{
+      return("Perlakuan Berpengaruh Signifikan Terhadap Respon")
+    }
+  })
+  
+  anovarbslres2 <- reactive({
+    anovarbsl4 <- anova(modelrbsl())
+    resultrbsl1 <- data.frame(anovarbsl4$`Pr(>F)`)
+    anovafixrbsl1 <- resultrbsl1[2,]
+    return(anovafixrbsl1)
+  })
+  
+  resultanovarbsl2 <- reactive({
+    req(anovarbslres2())
+    if (anovarbslres2() > 0.05){
+      return("Baris Tidak Berpengaruh Signifikan Terhadap Respon")
+    }
+    else{
+      return("Baris Berpengaruh Signifikan Terhadap Respon")
+    }
+  })
+  
+  anovarbslres3 <- reactive({
+    anovarbsl5 <- anova(modelrbsl())
+    resultrbsl2 <- data.frame(anovarbsl5$`Pr(>F)`)
+    anovafixrbsl2 <- resultrbsl2[3,]
+    return(anovafixrbsl2)
+  })
+  
+  resultanovarbsl3 <- reactive({
+    req(anovarbslres3())
+    if (anovarbslres3() > 0.05){
+      return("Kolom Tidak Berpengaruh Signifikan Terhadap Respon")
+    }
+    else{
+      return("Kolom Berpengaruh Signifikan Terhadap Respon")
+    }
+  })
+  
   output$anova_rbsl <- renderPrint(summary(anovarbsl()))
+  
+  output$anova_rbsl.result1 <- renderPrint(resultanovarbsl1())
+  
+  output$anova_rbsl.result2 <- renderPrint(resultanovarbsl2())
+  
+  output$anova_rbsl.result3 <- renderPrint(resultanovarbsl3())
   
   lsdrbsl <- reactive({
     req(anovarbsl())
